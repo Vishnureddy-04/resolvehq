@@ -32,9 +32,6 @@ def create_app():
     app.register_blueprint(tickets.bp)
     app.register_blueprint(analytics.bp)
     
-    # CREATE TABLES
-    with app.app_context():
-    	pass  # db.create_all()
     	# Seed data will be added manually via Supabase later    
     return app
 
