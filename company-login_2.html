@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Team sign in — ResolveHQ Console</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink:#151B27; --ink-2:#1E2737; --ink-3:#2A3548;
+    --canvas:#EDF0F6; --surface:#FFFFFF;
+    --line:#DCE2EC; --line-strong:#C6CFDD;
+    --text:#1B2230; --muted:#69748A; --muted-2:#8A95A8;
+    --danger:#C2453B;
+    /* COMPANY accent — amber/ochre */
+    --accent:#B5732A; --accent-deep:#8F5A1F; --accent-soft:#F6ECDD; --accent-ink:#4A2F11;
+  }
+  *{box-sizing:border-box}
+  html,body{height:100%}
+  body{margin:0;font-family:"IBM Plex Sans",-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;color:var(--text);background:var(--canvas);-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility}
+  .stage{min-height:100vh;display:grid;grid-template-columns:1.05fr 1fr;background:radial-gradient(1200px 600px at 0% -10%,#F4F6FB 0%,var(--canvas) 55%)}
+
+  .panel{position:relative;background:radial-gradient(900px 600px at 12% 0%,var(--ink-2) 0%,var(--ink) 60%);color:#E8ECF4;padding:48px 52px;display:flex;flex-direction:column;overflow:hidden;border-right:1px solid #0c111b}
+  .panel::after{content:"";position:absolute;inset:0;background-image:linear-gradient(rgba(255,255,255,.025) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.025) 1px,transparent 1px);background-size:46px 46px;mask-image:radial-gradient(700px 500px at 20% 18%,#000 0%,transparent 75%);pointer-events:none}
+  .brand{display:flex;align-items:center;gap:11px;position:relative;z-index:2}
+  .brand .mark{width:34px;height:34px;border-radius:9px;background:linear-gradient(150deg,var(--accent),var(--accent-deep));display:grid;place-items:center;box-shadow:0 6px 18px -6px var(--accent)}
+  .brand .mark svg{width:18px;height:18px;display:block}
+  .brand .name{font-family:"Space Grotesk",sans-serif;font-weight:600;font-size:16px;letter-spacing:.2px;color:#fff}
+  .brand .name span{color:var(--muted-2)}
+
+  .panel-body{position:relative;z-index:2;margin-top:auto;margin-bottom:auto;max-width:430px}
+  .eyebrow{font-family:"IBM Plex Mono",monospace;font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:var(--accent)}
+  .panel h1{font-family:"Space Grotesk",sans-serif;font-weight:600;font-size:clamp(26px,3vw,34px);line-height:1.12;margin:14px 0 14px;color:#F4F7FC;letter-spacing:-.4px}
+  .panel .lede{font-size:14.5px;line-height:1.6;color:#A9B3C6;margin:0 0 30px;max-width:38ch}
+
+  .pipeline{display:flex;flex-direction:column;gap:0;position:relative}
+  .stage-row{display:grid;grid-template-columns:30px 1fr auto;align-items:center;gap:14px;padding:11px 0;position:relative}
+  .stage-row .dot{width:13px;height:13px;border-radius:50%;border:2px solid var(--ink-3);background:var(--ink);margin-left:8px;position:relative;z-index:2}
+  .stage-row::before{content:"";position:absolute;left:14px;top:50%;bottom:-50%;width:2px;background:var(--ink-3);z-index:1}
+  .stage-row:last-child::before{display:none}
+  .stage-row.active .dot{border-color:var(--accent);background:var(--accent);box-shadow:0 0 0 5px color-mix(in srgb,var(--accent) 22%,transparent)}
+  .stage-row .label{font-size:13.5px;color:#C6CEDC;font-weight:500}
+  .stage-row.active .label{color:#fff}
+  .stage-row .ticket{font-family:"IBM Plex Mono",monospace;font-size:11.5px;color:var(--muted-2)}
+  .stage-row.active .ticket{color:var(--accent)}
+
+  .panel-foot{position:relative;z-index:2;display:flex;gap:26px;margin-top:8px;border-top:1px solid rgba(255,255,255,.07);padding-top:22px}
+  .stat .n{font-family:"Space Grotesk",sans-serif;font-weight:600;font-size:19px;color:#fff}
+  .stat .k{font-size:11.5px;color:var(--muted-2);margin-top:2px}
+
+  .form-side{display:flex;align-items:center;justify-content:center;padding:48px 40px}
+  .card{width:100%;max-width:404px}
+
+  .role-pill{display:inline-flex;align-items:center;gap:7px;font-size:12px;font-weight:600;color:var(--accent-ink);background:var(--accent-soft);border:1px solid color-mix(in srgb,var(--accent) 30%,transparent);padding:6px 11px;border-radius:999px;margin-bottom:22px}
+  .role-pill svg{width:14px;height:14px;color:var(--accent-deep)}
+
+  .head h2{font-family:"Space Grotesk",sans-serif;font-weight:600;font-size:23px;margin:0 0 6px;letter-spacing:-.3px;color:var(--text)}
+  .head p{margin:0 0 26px;font-size:13.5px;color:var(--muted);line-height:1.5}
+
+  form{display:flex;flex-direction:column;gap:16px}
+  .field label{display:block;font-size:12.5px;font-weight:600;color:#3D4658;margin-bottom:7px}
+  .input{position:relative;display:flex;align-items:center}
+  .input svg.lead{position:absolute;left:13px;width:16px;height:16px;color:var(--muted-2);pointer-events:none}
+  .input input{width:100%;font-family:inherit;font-size:14px;color:var(--text);padding:12px 13px 12px 39px;border:1px solid var(--line-strong);border-radius:10px;background:var(--surface);transition:border-color .15s,box-shadow .15s}
+  .input input::placeholder{color:#A9B2C2}
+  .input input:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px color-mix(in srgb,var(--accent) 18%,transparent)}
+  .input .peek{position:absolute;right:8px;background:transparent;border:0;cursor:pointer;color:var(--muted);padding:6px;border-radius:7px;display:grid;place-items:center}
+  .input .peek:hover{color:var(--text);background:#EEF1F7}
+  .input .peek svg{width:17px;height:17px}
+
+  .err{display:none;color:var(--danger);font-size:12px;margin-top:6px;align-items:center;gap:5px}
+  .err svg{width:13px;height:13px;flex:none}
+  .field.invalid .input input{border-color:var(--danger)}
+  .field.invalid .input input:focus{box-shadow:0 0 0 3px rgba(194,69,59,.16)}
+  .field.invalid .err{display:flex}
+
+  .row-between{display:flex;align-items:center;justify-content:space-between;margin-top:-2px}
+  .check{display:flex;align-items:center;gap:8px;cursor:pointer;user-select:none}
+  .check input{position:absolute;opacity:0;width:0;height:0}
+  .check .box{width:17px;height:17px;border-radius:5px;border:1.5px solid var(--line-strong);background:var(--surface);display:grid;place-items:center;transition:all .15s}
+  .check .box svg{width:11px;height:11px;color:#fff;opacity:0;transition:opacity .12s}
+  .check input:checked + .box{background:var(--accent);border-color:var(--accent)}
+  .check input:checked + .box svg{opacity:1}
+  .check input:focus-visible + .box{box-shadow:0 0 0 3px color-mix(in srgb,var(--accent) 22%,transparent)}
+  .check span.t{font-size:13px;color:#4A5468}
+  .link{font-size:13px;color:var(--accent-deep);font-weight:600;text-decoration:none}
+  .link:hover{text-decoration:underline}
+
+  .submit{appearance:none;border:0;cursor:pointer;width:100%;margin-top:6px;font-family:"IBM Plex Sans",sans-serif;font-size:14.5px;font-weight:600;color:#fff;padding:13px;border-radius:10px;background:linear-gradient(150deg,var(--accent),var(--accent-deep));box-shadow:0 8px 20px -8px var(--accent);transition:transform .12s ease,filter .2s ease;display:flex;align-items:center;justify-content:center;gap:9px}
+  .submit:hover{filter:brightness(1.04)}
+  .submit:active{transform:translateY(1px)}
+  .submit:disabled{opacity:.7;cursor:progress}
+  .submit .spin{width:16px;height:16px;border:2px solid rgba(255,255,255,.45);border-top-color:#fff;border-radius:50%;animation:spin .7s linear infinite;display:none}
+  .submit.loading .spin{display:block}
+  @keyframes spin{to{transform:rotate(360deg)}}
+
+  .banner{display:none;align-items:flex-start;gap:9px;margin-bottom:18px;padding:11px 13px;border-radius:10px;font-size:13px;line-height:1.45;background:var(--accent-soft);color:var(--accent-ink);border:1px solid color-mix(in srgb,var(--accent) 30%,transparent)}
+  .banner.show{display:flex}
+  .banner svg{width:16px;height:16px;flex:none;margin-top:1px;color:var(--accent-deep)}
+
+  .alt{text-align:center;font-size:13px;color:var(--muted);margin-top:24px;padding-top:22px;border-top:1px solid var(--line)}
+  .alt a{color:var(--accent-deep);font-weight:600;text-decoration:none}
+  .alt a:hover{text-decoration:underline}
+  .cross{display:flex;align-items:center;justify-content:center;gap:6px;margin-top:14px;font-size:12.5px;color:var(--muted-2)}
+  .cross a{color:#3D4658;font-weight:600;text-decoration:none;display:inline-flex;align-items:center;gap:4px}
+  .cross a:hover{color:var(--accent-deep)}
+  .cross a svg{width:13px;height:13px}
+
+  .demo{margin-top:18px;font-family:"IBM Plex Mono",monospace;font-size:11.5px;color:var(--muted);background:#F4F6FA;border:1px dashed var(--line-strong);border-radius:9px;padding:10px 12px;line-height:1.6}
+  .demo b{color:#3D4658;font-weight:500}
+
+  .mobile-brand{display:none;align-items:center;gap:10px;margin-bottom:26px}
+  .mobile-brand .mark{width:30px;height:30px;border-radius:8px;background:linear-gradient(150deg,var(--accent),var(--accent-deep));display:grid;place-items:center}
+  .mobile-brand .mark svg{width:16px;height:16px}
+  .mobile-brand .name{font-family:"Space Grotesk",sans-serif;font-weight:600;font-size:15px;color:var(--text)}
+
+  @media (max-width:880px){
+    .stage{grid-template-columns:1fr}
+    .panel{display:none}
+    .form-side{padding:34px 22px;min-height:100vh}
+    .mobile-brand{display:flex}
+  }
+  @media (prefers-reduced-motion:reduce){*{animation-duration:.001ms !important;transition-duration:.001ms !important}}
+</style>
+</head>
+<body>
+<div class="stage">
+  <aside class="panel" aria-hidden="true">
+    <div class="brand">
+      <div class="mark"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg></div>
+      <div class="name">Resolve<span>HQ Console</span></div>
+    </div>
+    <div class="panel-body">
+      <div class="eyebrow">Company console</div>
+      <h1>Triage the queue. Assign owners. Close the loop.</h1>
+      <p class="lede">Incoming issues land here ready to prioritize, route to the right team, and resolve — with turnaround in full view.</p>
+      <div class="pipeline">
+        <div class="stage-row active"><div class="dot"></div><div class="label">Incoming</div><div class="ticket">new queue</div></div>
+        <div class="stage-row"><div class="dot"></div><div class="label">Triaged</div><div class="ticket">P0–P3</div></div>
+        <div class="stage-row"><div class="dot"></div><div class="label">Assigned</div><div class="ticket">team</div></div>
+        <div class="stage-row"><div class="dot"></div><div class="label">Resolved</div><div class="ticket">closed</div></div>
+      </div>
+      <div class="panel-foot">
+        <div class="stat"><div class="n">P0–P3</div><div class="k">Priority tiers</div></div>
+        <div class="stat"><div class="n">Live</div><div class="k">Team workload</div></div>
+        <div class="stat"><div class="n">SLA</div><div class="k">Turnaround view</div></div>
+      </div>
+    </div>
+  </aside>
+
+  <main class="form-side">
+    <div class="card">
+      <div class="mobile-brand">
+        <div class="mark"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg></div>
+        <div class="name">ResolveHQ Console</div>
+      </div>
+
+      <span class="role-pill">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21h18M5 21V7l8-4v18M19 21V11l-6-4"/><path d="M9 9v.01M9 12v.01M9 15v.01M9 18v.01"/></svg>
+        Company console
+      </span>
+
+      <div class="head">
+        <h2>Team sign in</h2>
+        <p>Access the console to manage, prioritize, and resolve customer issues.</p>
+      </div>
+
+      <div class="banner" id="banner" role="status">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+        <span id="bannerText"></span>
+      </div>
+
+      <form id="loginForm" novalidate>
+        <div class="field" id="emailField">
+          <label for="email">Work email</label>
+          <div class="input">
+            <svg class="lead" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 7-10 5L2 7"/></svg>
+            <input id="email" type="email" autocomplete="username" placeholder="you@resolvehq.com" />
+          </div>
+          <div class="err"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg><span id="emailErr">Enter a valid work email.</span></div>
+        </div>
+
+        <div class="field" id="passField">
+          <label for="password">Password</label>
+          <div class="input">
+            <svg class="lead" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+            <input id="password" type="password" autocomplete="current-password" placeholder="Enter your password" />
+            <button type="button" class="peek" id="peek" aria-label="Show password" onclick="togglePw()">
+              <svg id="peekIcon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg>
+            </button>
+          </div>
+          <div class="err"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg><span>Password is required.</span></div>
+        </div>
+
+        <div class="row-between">
+          <label class="check">
+            <input type="checkbox" id="remember" />
+            <span class="box"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></span>
+            <span class="t">Keep me signed in</span>
+          </label>
+          <a href="#" class="link" onclick="return notice('reset')">Forgot password?</a>
+        </div>
+
+        <button type="submit" class="submit" id="submitBtn"><span class="spin"></span><span class="txt" id="submitTxt">Sign in</span></button>
+      </form>
+
+      <div class="alt">Need access? <a href="#" onclick="return notice('access')">Request a company account</a></div>
+
+      <div class="cross">
+        Are you a customer?
+        <a href="customer-login.html">Go to the customer portal
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+        </a>
+      </div>
+
+      <div class="demo"><b>Demo login (front-end only)</b><br>agent@resolvehq.com · <b>demo1234</b></div>
+    </div>
+  </main>
+</div>
+
+<script>
+/* Company login portal — UI + validation + SIMULATED sign-in.
+   Replace fakeSignIn() with a real /api/auth/login call and route to the console. */
+const DEMO = { email:'agent@resolvehq.com', password:'demo1234' };
+
+function togglePw(){
+  const inp=document.getElementById('password'),btn=document.getElementById('peek'),show=inp.type==='password';
+  inp.type=show?'text':'password';
+  btn.setAttribute('aria-label',show?'Hide password':'Show password');
+  document.getElementById('peekIcon').innerHTML=show
+    ?'<path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-6.5 0-10-7-10-7a18.5 18.5 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c6.5 0 10 7 10 7a18.5 18.5 0 0 1-2.16 3.19"/><line x1="1" y1="1" x2="23" y2="23"/>'
+    :'<path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/>';
+}
+function setInvalid(id,on){document.getElementById(id).classList.toggle('invalid',on)}
+function clearErrors(){['emailField','passField'].forEach(f=>setInvalid(f,false))}
+function validEmail(v){return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v)}
+function showBanner(m){document.getElementById('bannerText').textContent=m;document.getElementById('banner').classList.add('show')}
+function hideBanner(){document.getElementById('banner').classList.remove('show')}
+function notice(kind){
+  const t={reset:'Password reset would be emailed to you. Wire this to your backend.',access:'Company access requests would be reviewed by an admin. Connect this to your backend.'};
+  showBanner(t[kind]); return false;
+}
+function fakeSignIn(email,password){
+  return new Promise(r=>setTimeout(()=>r(email.toLowerCase()===DEMO.email&&password===DEMO.password),850));
+}
+document.getElementById('loginForm').addEventListener('submit',async e=>{
+  e.preventDefault(); hideBanner(); clearErrors();
+  const email=document.getElementById('email').value.trim();
+  const password=document.getElementById('password').value;
+  let bad=false;
+  if(!validEmail(email)){document.getElementById('emailErr').textContent=email?'Enter a valid work email.':'Work email is required.';setInvalid('emailField',true);bad=true;}
+  if(!password){setInvalid('passField',true);bad=true;}
+  if(bad)return;
+  const btn=document.getElementById('submitBtn'),txt=document.getElementById('submitTxt');
+  btn.classList.add('loading');btn.disabled=true;txt.textContent='Signing in…';
+
+  // ---- REPLACE WITH YOUR REAL AUTH CALL ----
+  // const res = await fetch('/api/auth/login', {method:'POST',headers:{'Content-Type':'application/json'},
+  //   body: JSON.stringify({ email, password, role:'company' })});
+  // if(res.ok) window.location = '/console';   // company console
+  const ok=await fakeSignIn(email,password);
+  // ------------------------------------------
+
+  btn.classList.remove('loading');btn.disabled=false;txt.textContent='Sign in';
+  if(ok){showBanner("Signed in. In a live build you'd now land on the company console.");}
+  else{document.getElementById('emailErr').textContent='Email or password is incorrect.';setInvalid('emailField',true);setInvalid('passField',true);}
+});
+</script>
+</body>
+</html>
