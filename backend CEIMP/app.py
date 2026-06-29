@@ -34,7 +34,7 @@ def create_app():
     
     # CREATE TABLES
     with app.app_context():
-    	db.create_all()
+    	# db.create_all()
     	# Seed data will be added manually via Supabase later    
     return app
 
