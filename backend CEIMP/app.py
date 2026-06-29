@@ -1,11 +1,11 @@
 import os
 from datetime import timedelta
 from flask import Flask
-from flask_sqlalchemy import SQLAlchemy
+# from flask_sqlalchemy import SQLAlchemy
 from flask_jwt_extended import JWTManager
 from flask_cors import CORS
 
-db = SQLAlchemy()
+# db = SQLAlchemy()
 jwt = JWTManager()
 
 def create_app():
@@ -22,7 +22,7 @@ def create_app():
     app.config['MAX_CONTENT_LENGTH'] = 5 * 1024 * 1024  # 5MB max file size
     
     # ---- INIT ----
-    db.init_app(app)
+    # db.init_app(app)
     jwt.init_app(app)
     CORS(app, resources={r"/api/*": {"origins": "*"}})
     
