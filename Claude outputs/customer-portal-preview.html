@@ -7,7 +7,89 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
-<script src="config.js"></script>
+<script>
+/* PREVIEW ONLY: in-browser fake of the ResolveHQ API. Data lives in this tab and resets on reload. */
+(function(){
+  const API='https://preview.resolvehq/api'; window.RESOLVEHQ_API=API;
+  const now=Date.now(), H=3600e3;
+  const db={users:[{id:1,email:'demo@client.com',password:'demo1234',name:'Ravi Kumar',company:'Client Co',role:'customer'},{id:2,email:'priya@client.com',password:'demo1234',name:'Priya Shah',company:'Client Co',role:'customer'}], tickets:[], seq:1000};
+  const PUBLIC=new Set(['gmail.com','yahoo.com','outlook.com','hotmail.com','icloud.com','live.com','aol.com','proton.me','protonmail.com','rediffmail.com','yahoo.co.in','zoho.com']);
+  const dom=e=>{const d=(e||'').split('@')[1]; return d&&!PUBLIC.has(d)?d:null;};
+  const ini=n=>(n||'').split(/\s+/).filter(Boolean).slice(0,2).map(w=>w[0]).join('').toUpperCase()||'?';
+  const pub=u=>({id:u.id,email:u.email,name:u.name,company:u.company,role:u.role,initials:ini(u.name),teamDomain:dom(u.email)});
+  const ev=(stage,at,note,label,by,author)=>({stage,at,note:note||'',label:label||'',by:by||'system',author:author||''});
+  // one sample ticket for the demo account
+  db.tickets.push({id:'TKT-'+(++db.seq),owner:1,title:'Invoice PDF shows wrong tax total',desc:'The downloaded invoice PDF lists a tax amount that does not match the dashboard figure.',category:'Invoice',type:'bug',priority:'P2',status:'in_progress',team:'Billing',createdAt:now-26*H,updatedAt:now-3*H,resolvedAt:null,closedAt:null,attachments:[],
+    events:[ev('submitted',now-26*H,'Issue submitted — our team will review shortly','','customer'),ev('in_review',now-20*H,'Triaged & prioritized','','company'),ev('note',now-20*H,'Routed to Billing','Assigned','company'),ev('in_progress',now-3*H,'Billing is now working on it','','company')]});
+  db.tickets.push({id:'TKT-'+(++db.seq),owner:2,title:'GRN not linking to purchase order',desc:'After posting a GRN, it does not show against the PO.',category:'GRN',type:'enhancement',priority:null,status:'submitted',team:'',createdAt:now-5*H,updatedAt:now-5*H,resolvedAt:null,closedAt:null,attachments:[],
+    events:[Object.assign(ev('submitted',now-5*H,'Issue submitted — our team will review shortly','','customer'),{author:'Priya Shah'})]});
+  const SHOW=new Set(['Reply to customer','Asked customer','Customer reply','Customer added images']);
+  const out=(t,viewer)=>{const c=Object.assign({},t); if(viewer) c.mine=t.owner===viewer.id;
+    c.team=''; c.assignee=null;
+    c.events=t.events.filter(e=>e.stage!=='note'||SHOW.has(e.label)).map(e=>e.by==='company'?Object.assign({},e,{author:'',note:e.stage==='note'?e.note:''}):e); const u=db.users.find(x=>x.id===t.owner); c.customer={name:u.name,email:u.email,company:u.company,initials:ini(u.name)}; c.attachmentCount=t.attachments.length; return c;};
+  const res=(code,body)=>new Response(JSON.stringify(body),{status:code,headers:{'Content-Type':'application/json'}});
+  const me=h=>{const a=(h&&(h.Authorization||h.authorization))||''; const m=a.match(/mock\.(\d+)/); return m&&db.users.find(u=>u.id===+m[1]);};
+  const real=window.fetch.bind(window);
+  async function imgs(files,have){
+    if(have+files.length>5) return [null,'You can attach up to 5 images per issue.'];
+    const o=[]; for(const f of files){ if(f.size>5*1024*1024) return [null,'“'+f.name+'” is larger than 5 MB.'];
+      o.push({id:Math.random(),name:f.name,type:f.type,size:f.size,url:URL.createObjectURL(f)}); } return [o,null];
+  }
+  window.fetch=async function(url,opt={}){
+    if(typeof url!=='string'||!url.startsWith(API)) return real(url,opt);
+    await new Promise(r=>setTimeout(r,350));
+    const path=url.slice(API.length), m=(opt.method||'GET').toUpperCase(), h=opt.headers||{};
+    const body=opt.body&&!(opt.body instanceof FormData)?JSON.parse(opt.body):null;
+    if(path==='/auth/register'&&m==='POST'){
+      const e=(body.email||'').toLowerCase();
+      if(db.users.some(u=>u.email===e)) return res(409,{error:'An account with this email already exists. Try signing in.',fields:{email:'Already registered.'}});
+      const u={id:db.users.length+1,email:e,password:body.password,name:body.name,company:body.company,role:'customer'}; db.users.push(u);
+      return res(201,{access_token:'mock.'+u.id,user:pub(u)});
+    }
+    if(path==='/auth/login'&&m==='POST'){
+      const u=db.users.find(x=>x.email===(body.email||'').toLowerCase()&&x.password===body.password);
+      return u?res(200,{access_token:'mock.'+u.id,user:pub(u)}):res(401,{error:'Email or password is incorrect.'});
+    }
+    const u=me(h); if(!u) return res(401,{error:'Please sign in.'});
+    if(path==='/auth/me') return res(200,pub(u));
+    const vis=t=>t.owner===u.id||(dom(u.email)&&dom(db.users.find(x=>x.id===t.owner).email)===dom(u.email));
+    if(path==='/tickets'&&m==='GET') return res(200,db.tickets.filter(vis).sort((a,b)=>b.updatedAt-a.updatedAt).map(t=>out(t,u)));
+    if(path==='/tickets'&&m==='POST'){
+      const f=opt.body; const [a,err]=await imgs(f.getAll('files'),0); if(err) return res(400,{error:err});
+      const ts=Date.now(); const t={id:'TKT-'+(++db.seq),owner:u.id,title:f.get('title'),desc:f.get('description'),category:f.get('category'),type:f.get('type'),priority:f.get('type')==='bug'?'P0':null,status:'submitted',team:'',createdAt:ts,updatedAt:ts,resolvedAt:null,closedAt:null,attachments:a,events:[ev('submitted',ts,'Issue submitted — our team will review shortly','','customer',u.name)]};
+      db.tickets.push(t); return res(201,out(t,u));
+    }
+    const mm=path.match(/^\/tickets\/([^/]+)(\/attachments|\/messages)?$/); const t=mm&&db.tickets.find(x=>x.id===decodeURIComponent(mm[1])&&vis(x));
+    if(!t) return res(404,{error:'Ticket not found'});
+    if(!mm[2]) return res(200,out(t,u));
+    if(t.owner!==u.id) return res(403,{error:'Only the person who raised this issue can reply.'});
+    if(mm[2]==='/attachments'){ const [a,err]=await imgs(opt.body.getAll('files'),t.attachments.length); if(err) return res(400,{error:err});
+      t.attachments.push(...a); t.events.push(ev('note',Date.now(),a.length+' image'+(a.length>1?'s':'')+' attached','Customer added images','customer',u.name)); t.updatedAt=Date.now(); return res(201,out(t,u)); }
+    if(mm[2]==='/messages'){ t.events.push(ev('note',Date.now(),body.message,'Customer reply','customer',u.name));
+      if(t.status==='awaiting_customer'){ t.status=t.team?'in_progress':'in_review'; t.events.push(ev(t.status,Date.now(),'','','customer')); }
+      t.updatedAt=Date.now(); return res(200,out(t,u)); }
+    return res(404,{error:'Not found'});
+  };
+  // "pretend to be the support team" helper for previewing status changes
+  window.__previewSupport=function(){
+    const id=(typeof state!=='undefined'&&state.current&&state.current.id); const t=db.tickets.find(x=>x.id===id);
+    if(!t){ alertBar('Open one of your tickets first, then click this again.'); return; }
+    const T=Date.now();
+    if(t.status==='submitted'){ t.priority=t.priority||'P1'; t.status='in_review'; t.events.push(ev('in_review',T,'Triaged & prioritized','','company')); t.events.push(ev('note',T,'Set to P1','Priority','company')); }
+    else if(t.status!=='awaiting_customer'){ t.team=t.team||'Engineering'; t.status='awaiting_customer'; t.events.push(ev('awaiting_customer',T,'','','company')); t.events.push(ev('note',T,'Thanks! Which browser and version are you using?','Asked customer','company')); }
+    else { alertBar('Ticket is waiting for your reply — answer in the comment box.'); return; }
+    t.updatedAt=T; openTicket(id);
+  };
+  function alertBar(m){ const el=document.getElementById('pvMsg'); if(el){ el.textContent=m; setTimeout(()=>el.textContent='',3500);} }
+  document.addEventListener('DOMContentLoaded',()=>{
+    const b=document.createElement('div');
+    b.style.cssText='position:fixed;z-index:9999;left:50%;bottom:14px;transform:translateX(-50%);background:#151B27;color:#fff;font:500 12.5px "IBM Plex Sans",sans-serif;padding:8px 10px 8px 14px;border-radius:12px;box-shadow:0 6px 24px rgba(0,0,0,.25);display:flex;gap:10px;align-items:center;max-width:calc(100vw - 32px);flex-wrap:wrap';
+    b.innerHTML='<span>Preview · demo@client.com or priya@client.com / demo1234 · resets on reload</span><button onclick="__previewSupport()" style="background:#0E8C8C;color:#fff;border:0;border-radius:8px;padding:6px 10px;font:600 12px inherit;cursor:pointer">Simulate support reply</button><span id="pvMsg" style="color:#7fd9d0"></span>';
+    document.body.appendChild(b);
+  });
+})();
+
+</script>
 <style>
 /* ===== login screen ===== */
 
@@ -375,28 +457,6 @@
   .composer textarea{width:100%;box-sizing:border-box;font-family:inherit;font-size:13.5px;color:var(--text);padding:11px 13px;border:1px solid var(--line-strong);border-radius:10px;min-height:84px;resize:vertical;line-height:1.5}
   .composer textarea:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px color-mix(in srgb,var(--accent) 18%,transparent)}
   .composer .row{display:flex;justify-content:flex-end;gap:9px;margin-top:10px}
-  .acct{position:relative}
-  .acct-btn{display:flex;align-items:center;gap:9px;padding:4px 10px 4px 4px;border:1px solid var(--line-strong);border-radius:999px;background:var(--surface);cursor:pointer;font:inherit;color:var(--text)}
-  .acct-btn:hover{background:#F4F6FA}
-  .acct-btn:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
-  .acct-av{width:30px;height:30px;border-radius:50%;background:var(--accent);color:#fff;font-size:12px;font-weight:700;display:grid;place-items:center}
-  .acct-name{font-size:13px;font-weight:600;max-width:140px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-  .acct-btn svg{width:14px;height:14px;color:var(--muted)}
-  .acct-menu{position:absolute;right:0;top:46px;width:260px;max-width:calc(100vw - 32px);background:var(--surface);border:1px solid var(--line);border-radius:13px;box-shadow:0 18px 40px -12px rgba(21,27,39,.28);z-index:45;overflow:hidden}
-  .acct-menu[hidden]{display:none}
-  .acct-id{padding:14px 16px;border-bottom:1px solid var(--line)}
-  .acct-id .n{font-weight:600;font-size:14px}
-  .acct-id .e{font-size:12.5px;color:var(--muted);margin-top:2px;word-break:break-all}
-  .acct-id .c{font-size:12px;color:var(--muted);margin-top:4px}
-  .acct-item{display:flex;align-items:center;gap:9px;width:100%;padding:11px 16px;background:none;border:0;font:inherit;font-size:13.5px;color:var(--text);cursor:pointer;text-align:left}
-  .acct-item:hover{background:#F7F9FC}
-  .acct-item svg{width:16px;height:16px;color:var(--muted)}
-  .acct-item.out{color:var(--danger);font-weight:600}
-  .acct-item.out svg{color:var(--danger)}
-  @media (max-width:760px){ .acct-name,.acct-btn>svg{display:none} .acct-btn{padding:3px} }
-  #topNew{white-space:nowrap}
-  @media (max-width:520px){ .topbar .sub{display:none} #topNew{padding:9px 12px} }
-  .top-actions{display:flex;align-items:center;gap:10px}
   .team-note{display:flex;gap:10px;align-items:center;background:var(--accent-soft);color:var(--accent-ink);border:1px solid color-mix(in srgb,var(--accent) 25%,transparent);border-radius:12px;padding:10px 14px;font-size:13px;margin-bottom:16px}
   .team-note svg{width:17px;height:17px;flex:none;color:var(--accent-deep)}
   .by{display:inline-flex;align-items:center;gap:7px;font-size:13px;white-space:nowrap}
@@ -608,23 +668,10 @@
           <div class="sub" id="pageSub">Your issues at a glance</div>
         </div>
       </div>
-      <div class="top-actions">
       <button class="btn btn-primary" id="topNew" onclick="go('new')">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
         New issue
       </button>
-      <div class="acct">
-        <button class="acct-btn" id="acctBtn" onclick="toggleAcct(event)" aria-haspopup="true" aria-label="Account menu">
-          <span class="acct-av" id="acctAv"></span><span class="acct-name" id="acctName"></span>
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>
-        </button>
-        <div class="acct-menu" id="acctMenu" hidden>
-          <div class="acct-id"><div class="n" id="acctMName"></div><div class="e" id="acctMEmail"></div><div class="c" id="acctMCo"></div></div>
-          
-          <button class="acct-item out" onclick="signOut()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>Sign out</button>
-        </div>
-      </div>
-      </div>
     </header>
     <div class="content" id="content"></div>
   </div>
@@ -695,24 +742,12 @@ let CUSTOMER = { name:'', company:'', initials:'', team:null };
 let tickets = [];
 let loadState = 'idle';   // idle | loading | ready | error
 let loadError = '';
-async function refresh(silent){
-  if(!silent){ loadState='loading'; render(); }
-  let list;
-  try{ list = await api('/tickets'); }
-  catch(e){ if(!silent){ loadState='error'; loadError=e.message; render(); } return; }
-  const before = new Map(tickets.map(t=>[t.id,t.updatedAt]));
-  tickets = list; loadState='ready';
-  if(!silent){ render(); return; }
-  // background check: tell the customer about updates from our team, and refresh what's on screen
-  const changed = list.filter(t=>before.has(t.id) && before.get(t.id)!==t.updatedAt);
-  if(changed.length) toast(changed.length===1 ? `Update on ${changed[0].id}: ${STATUS[changed[0].status].label}` : `${changed.length} of your tickets were updated`);
-  const typing = document.activeElement && /TEXTAREA|INPUT|SELECT/.test(document.activeElement.tagName);
-  if(state.current){
-    const f=list.find(t=>t.id===state.current.id);
-    if(f && f.updatedAt!==state.current.updatedAt && !typing) openTicket(f.id);
-  } else if(state.view!=='new' && !typing) render();
+async function refresh(){
+  loadState='loading'; render();
+  try{ tickets = await api('/tickets'); loadState='ready'; }
+  catch(e){ loadState='error'; loadError=e.message; }
+  render();
 }
-let _custPoll=null;
 function ev(stage, at, note){ return {stage, at, note:note||''}; }
 let state = { view:'dashboard', filter:'all', current:null };
 let _clockTimer = null;
@@ -1120,17 +1155,8 @@ async function submitIssue(){
 }
 
 /* ---- init: resume a saved session ---- */
-function toggleAcct(e){ e.stopPropagation(); const m=$('#acctMenu'); m.hidden=!m.hidden; }
-function closeAcct(){ const m=document.getElementById('acctMenu'); if(m) m.hidden=true; }
-document.addEventListener('click',e=>{ if(!e.target.closest('.acct')) closeAcct(); });
-document.addEventListener('keydown',e=>{ if(e.key==='Escape') closeAcct(); });
-function fillAcct(name,email,sub,initials){
-  $('#acctAv').textContent=initials; $('#acctName').textContent=name;
-  $('#acctMName').textContent=name; $('#acctMEmail').textContent=email||''; $('#acctMCo').textContent=sub||'';
-}
 function setUser(u){
-  CUSTOMER={name:u.name, email:u.email||'', company:u.company||'', initials:u.initials||'?', team:u.teamDomain||null};
-  fillAcct(CUSTOMER.name, CUSTOMER.email, CUSTOMER.company, CUSTOMER.initials);
+  CUSTOMER={name:u.name, company:u.company||'', initials:u.initials||'?', team:u.teamDomain||null};
   $('#navTickets').textContent = CUSTOMER.team ? 'Team tickets' : 'My tickets';
   TITLES.tickets = CUSTOMER.team ? ['Team tickets','Issues raised by everyone at @'+CUSTOMER.team] : ['My tickets','Every issue you have submitted'];
   $('#whoName').textContent=CUSTOMER.name; $('#whoCo').textContent=CUSTOMER.company; $('#avatar').textContent=CUSTOMER.initials;
@@ -1148,10 +1174,8 @@ function showApp(){
   state.current=null; state.view='dashboard'; state.filter='all';
   document.querySelectorAll('.nav button[data-view]').forEach(b=>b.classList.toggle('active', b.dataset.view==='dashboard'));
   window.scrollTo(0,0); refresh();
-  if(_custPoll) clearInterval(_custPoll);
-  _custPoll=setInterval(()=>{ if(document.visibilityState==='visible') refresh(true); }, 30000);
 }
-function signOut(){ if(_custPoll){ clearInterval(_custPoll); _custPoll=null; } closeAcct(); setToken(null); tickets=[]; loadState='idle'; showLogin('You have been signed out.'); }
+function signOut(){ setToken(null); tickets=[]; loadState='idle'; showLogin(); }
 function showLogin(msg){
   if(_clockTimer){ clearInterval(_clockTimer); _clockTimer=null; }
   state.current=null;

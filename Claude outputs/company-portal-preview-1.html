@@ -7,7 +7,92 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
-<script src="config.js"></script>
+<script>
+/* PREVIEW ONLY: in-browser fake of the ResolveHQ API for the company console. Resets on reload. */
+(function(){
+  const API='https://preview.resolvehq/api'; window.RESOLVEHQ_API=API;
+  const now=Date.now(), H=3600e3, D=24*H;
+  const ini=n=>(n||'').split(/\s+/).filter(Boolean).slice(0,2).map(w=>w[0]).join('').toUpperCase()||'?';
+  const users=[
+    {id:1,email:'admin@finnoto.com',password:'demo1234',name:'Vishnu Reddy',role:'company',team:'Support',isAdmin:true,active:true},
+    {id:2,email:'kiran@finnoto.com',password:'demo1234',name:'Kiran Dev',role:'company',team:'Engineering',isAdmin:false,active:true},
+    {id:3,email:'meera@finnoto.com',password:'demo1234',name:'Meera Nair',role:'company',team:'Billing',isAdmin:false,active:true},
+  ];
+  const cust=(name,email,company)=>({name,email,company,initials:ini(name)});
+  const C1=cust('Asha Rao','asha@clientco.com','Client Co'), C2=cust('Bala Iyer','bala@clientco.com','Client Co'), C3=cust('Tom Reyes','tom@globex.com','Globex');
+  let evSeq=0; const ev=(stage,at,note,label,by,author)=>({id:++evSeq,stage,at,note:note||'',label:label||'',by:by||'system',author:author||''});
+  const seenAt={}; const NK={'Customer reply':'reply','Customer added images':'images'};
+  let seq=1000; const tickets=[];
+  const mk=(c,title,desc,cat,prio,status,team,assignee,created,events)=>{ tickets.push({id:'TKT-'+(++seq),customer:c,title,desc,category:cat,type:'bug',priority:prio,status,team:team||'',assigneeId:assignee||null,createdAt:created,updatedAt:events[events.length-1].at,resolvedAt:null,closedAt:null,events,attachments:[]}); };
+  mk(C1,'E-invoice generation failing','IRN generation fails with a timeout for all invoices today.','E-invoice','P0','submitted','',null,now-2*H,[ev('submitted',now-2*H,'Issue submitted — our team will review shortly','','customer','Asha Rao')]);
+  mk(C2,'Invoice PDF shows wrong tax total','Tax on the PDF does not match the dashboard.','Invoice','P2','in_progress','Billing',3,now-1*D,[ev('submitted',now-D,'','','customer','Bala Iyer'),ev('in_review',now-D+2*H,'Triaged & prioritized','','company','Vishnu Reddy'),ev('in_progress',now-20*H,'Billing is now working on it','','company','Meera Nair')]);
+  mk(C3,'Credit note not reducing outstanding','Credit note posted but vendor balance unchanged.','Credit note','P1','awaiting_customer','Engineering',2,now-3*D,[ev('submitted',now-3*D,'','','customer','Tom Reyes'),ev('in_review',now-3*D+4*H,'Triaged & prioritized','','company','Vishnu Reddy'),ev('awaiting_customer',now-6*H,'','','company','Kiran Dev'),ev('note',now-6*H,'Which Okta group are the new staff in?','Asked customer','company','Kiran Dev'),ev('note',now-90*60*1000,'Credit note CN-118 for vendor Apex Traders','Customer reply','customer','Tom Reyes')]);
+  const pub=u=>({id:u.id,email:u.email,name:u.name,role:u.role,team:u.team,isAdmin:u.isAdmin,active:u.active,initials:ini(u.name)});
+  const OPEN=['submitted','in_review','in_progress','awaiting_customer'];
+  const agentOut=u=>Object.assign(pub(u),{openAssigned:tickets.filter(t=>t.assigneeId===u.id&&OPEN.includes(t.status)).length});
+  const out=t=>{const a=users.find(u=>u.id===t.assigneeId); const c=Object.assign({},t,{assignee:a?{id:a.id,name:a.name,initials:ini(a.name)}:null,attachmentCount:t.attachments.length}); delete c.assigneeId; return c;};
+  const res=(code,body)=>new Response(JSON.stringify(body),{status:code,headers:{'Content-Type':'application/json'}});
+  const meOf=h=>{const m=((h&&(h.Authorization||h.authorization))||'').match(/mock\.(\d+)/); const u=m&&users.find(x=>x.id===+m[1]); return u&&u.active?u:null;};
+  const tmp=()=>Math.random().toString(36).slice(2,8)+Math.random().toString(36).slice(2,6).toUpperCase();
+  function setStatus(t,s,u){ if(s===t.status) return; t.status=s; const T=Date.now(); if(s==='resolved'&&!t.resolvedAt)t.resolvedAt=T; if(s==='closed'){t.closedAt=T; if(!t.resolvedAt)t.resolvedAt=T;} if(!['resolved','closed'].includes(s))t.closedAt=null; t.events.push(ev(s,T,'','','company',u.name)); }
+  const real=window.fetch.bind(window);
+  window.fetch=async function(url,opt={}){
+    if(typeof url!=='string'||!url.startsWith(API)) return real(url,opt);
+    await new Promise(r=>setTimeout(r,250));
+    const path=url.slice(API.length), m=(opt.method||'GET').toUpperCase(), body=opt.body?JSON.parse(opt.body):{};
+    if(path==='/auth/login'){ const u=users.find(x=>x.email===(body.email||'').toLowerCase()&&x.password===body.password);
+      if(!u) return res(401,{error:'Email or password is incorrect.'}); if(!u.active) return res(403,{error:'This account has been deactivated. Contact your admin.'});
+      return res(200,{access_token:'mock.'+u.id,user:pub(u)}); }
+    const u=meOf(opt.headers); if(!u) return res(401,{error:'Please sign in.'});
+    if(path==='/auth/me') return res(200,pub(u));
+    if(path==='/auth/password'){ if(body.current!==u.password) return res(400,{error:'Your current password is incorrect.'}); if((body.new||'').length<8) return res(400,{error:'Use at least 8 characters.'}); u.password=body.new; return res(200,{message:'ok'}); }
+    if(path==='/notifications/seen'){ seenAt[u.id]=Date.now(); return res(200,{unread:0}); }
+    if(path==='/notifications'){ const seen=seenAt[u.id]??(now-3*H); const items=[];
+      tickets.forEach(t=>t.events.forEach(e=>{ if(e.by!=='customer') return; if(!(e.stage==='submitted'||NK[e.label])) return;
+        const kind=e.stage==='submitted'?'new':NK[e.label];
+        items.push({id:e.id,kind,ticketId:t.id,title:t.title,company:t.customer.company,customer:e.author||t.customer.name,urgent:kind==='new'&&t.type==='bug',priority:t.priority,note:kind==='new'?'':e.note,at:e.at,unread:e.at>seen}); }));
+      items.sort((a,b)=>b.at-a.at); return res(200,{unread:items.filter(i=>i.unread).length,items:items.slice(0,30)}); }
+    if(path==='/agents'&&m==='GET') return res(200,users.map(agentOut));
+    if(path==='/agents'&&m==='POST'){ if(!u.isAdmin) return res(403,{error:'Only admins can add teammates.'});
+      const e=(body.email||'').toLowerCase(); if(users.some(x=>x.email===e)) return res(409,{error:'This email is already used by a teammate.'});
+      const pw=tmp(); const n={id:users.length+1,email:e,password:pw,name:body.name,role:'company',team:body.team,isAdmin:!!body.isAdmin,active:true}; users.push(n);
+      return res(201,Object.assign(agentOut(n),{tempPassword:pw})); }
+    let mm=path.match(/^\/agents\/(\d+)$/);
+    if(mm){ if(!u.isAdmin) return res(403,{error:'Only admins can change teammates.'}); const a=users.find(x=>x.id===+mm[1]); const extra={};
+      if(a.id===u.id&&(body.active===false||body.isAdmin===false)) return res(400,{error:"You can't do that to your own account."});
+      if('isAdmin' in body) a.isAdmin=!!body.isAdmin;
+      if('active' in body){ a.active=!!body.active; if(!a.active) tickets.forEach(t=>{ if(t.assigneeId===a.id&&OPEN.includes(t.status)) t.assigneeId=null; }); }
+      if(body.resetPassword){ a.password=tmp(); extra.tempPassword=a.password; }
+      return res(200,Object.assign(agentOut(a),extra)); }
+    if(path==='/tickets') return res(200,[...tickets].sort((a,b)=>b.updatedAt-a.updatedAt).map(out));
+    mm=path.match(/^\/tickets\/([^/]+)(\/messages)?$/); const t=mm&&tickets.find(x=>x.id===decodeURIComponent(mm[1]));
+    if(!t) return res(404,{error:'Ticket not found'});
+    const T=Date.now();
+    if(!mm[2]&&m==='GET') return res(200,out(t));
+    if(!mm[2]&&m==='PATCH'){
+      if('priority' in body && body.priority!==t.priority){ t.priority=body.priority; if(t.status==='submitted'&&body.priority){ t.status='in_review'; t.events.push(ev('in_review',T,'Triaged & prioritized','','company',u.name)); } t.events.push(ev('note',T,body.priority?'Set to '+body.priority:'Cleared','Priority','company',u.name)); }
+      if('team' in body && (body.team||'')!==t.team){ t.team=body.team||''; t.events.push(ev('note',T,body.team?'Routed to '+body.team:'Unassigned','Assigned','company',u.name)); if(body.team&&(t.status==='in_review'||t.status==='submitted')){ t.status='in_progress'; t.events.push(ev('in_progress',T,body.team+' is now working on it','','company',u.name)); } }
+      if('assignee' in body && body.assignee!==t.assigneeId){ const a=users.find(x=>x.id===body.assignee); t.assigneeId=a?a.id:null;
+        t.events.push(ev('note',T,a?(a.id===u.id?u.name+' took this ticket':'Assigned to '+a.name):'Unassigned','Assignee','company',u.name));
+        if(a&&!t.team){ t.team=a.team; t.events.push(ev('note',T,'Routed to '+a.team,'Assigned','company',u.name)); if(t.status==='in_review'||t.status==='submitted'){ t.status='in_progress'; t.events.push(ev('in_progress',T,a.team+' is now working on it','','company',u.name)); } } }
+      if('status' in body) setStatus(t,body.status,u);
+      t.updatedAt=T; return res(200,out(t)); }
+    if(mm[2]){ if(body.kind==='request_info'){ setStatus(t,'awaiting_customer',u); if(body.message) t.events.push(ev('note',T,body.message,'Asked customer','company',u.name)); }
+      else { if(!body.message) return res(400,{error:'Write an update first.'}); t.events.push(ev('note',T,body.message,'Reply to customer','company',u.name)); }
+      t.updatedAt=T; return res(200,out(t)); }
+    return res(404,{error:'Not found'});
+  };
+  const samples=[['Cannot create purchase orders — approval stuck','PO approval spins forever for all users.',C3,'bug','Purchase order'],['Add bulk upload for GRNs','We want to upload GRNs from Excel.',C1,'enhancement','GRN'],['E-invoice IRN missing on PDF','IRN number does not print on the invoice PDF.',C2,'bug','E-invoice']];
+  window.__newCustomerIssue=function(){ const s=samples[(seq)%samples.length]; const T=Date.now();
+    tickets.push({id:'TKT-'+(++seq),customer:s[2],title:s[0],desc:s[1],category:s[4],type:s[3],priority:s[3]==='bug'?'P0':null,status:'submitted',team:'',assigneeId:null,createdAt:T,updatedAt:T,resolvedAt:null,closedAt:null,attachments:[],events:[ev('submitted',T,'Issue submitted — our team will review shortly','','customer',s[2].name)]});
+    if(typeof refresh==='function' && document.getElementById('appScreen').style.display!=='none') refresh(true); };
+  document.addEventListener('DOMContentLoaded',()=>{ const b=document.createElement('div');
+    b.style.cssText='position:fixed;z-index:9999;left:50%;bottom:14px;transform:translateX(-50%);background:#151B27;color:#fff;font:500 12.5px "IBM Plex Sans",sans-serif;padding:8px 10px 8px 14px;border-radius:12px;box-shadow:0 6px 24px rgba(0,0,0,.25);display:flex;gap:10px;align-items:center;max-width:calc(100vw - 32px);flex-wrap:wrap';
+    b.innerHTML='<span>Preview · admin@finnoto.com (admin) or kiran@finnoto.com / demo1234</span><button onclick="__newCustomerIssue()" style="background:#C77B30;color:#fff;border:0;border-radius:8px;padding:6px 10px;font:600 12px inherit;cursor:pointer">Simulate customer issue</button>';
+    document.body.appendChild(b); });
+})();
+
+</script>
 <style>
   :root{
     --ink:#151B27; --ink-2:#1E2737; --ink-3:#2A3548;

@@ -7,7 +7,85 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
-<script src="config.js"></script>
+<script>
+/* PREVIEW ONLY: in-browser fake of the ResolveHQ API for the company console. Resets on reload. */
+(function(){
+  const API='https://preview.resolvehq/api'; window.RESOLVEHQ_API=API;
+  const now=Date.now(), H=3600e3, D=24*H;
+  const ini=n=>(n||'').split(/\s+/).filter(Boolean).slice(0,2).map(w=>w[0]).join('').toUpperCase()||'?';
+  const users=[
+    {id:1,email:'admin@finnoto.com',password:'demo1234',name:'Vishnu Reddy',role:'company',team:'Support',isAdmin:true,active:true},
+    {id:2,email:'kiran@finnoto.com',password:'demo1234',name:'Kiran Dev',role:'company',team:'Engineering',isAdmin:false,active:true},
+    {id:3,email:'meera@finnoto.com',password:'demo1234',name:'Meera Nair',role:'company',team:'Billing',isAdmin:false,active:true},
+  ];
+  const cust=(name,email,company)=>({name,email,company,initials:ini(name)});
+  const C1=cust('Asha Rao','asha@clientco.com','Client Co'), C2=cust('Bala Iyer','bala@clientco.com','Client Co'), C3=cust('Tom Reyes','tom@globex.com','Globex');
+  const ev=(stage,at,note,label,by,author)=>({stage,at,note:note||'',label:label||'',by:by||'system',author:author||''});
+  let seq=1000; const tickets=[];
+  const mk=(c,title,desc,cat,prio,status,team,assignee,created,events)=>{ tickets.push({id:'TKT-'+(++seq),customer:c,title,desc,category:cat,type:'bug',priority:prio,status,team:team||'',assigneeId:assignee||null,createdAt:created,updatedAt:events[events.length-1].at,resolvedAt:null,closedAt:null,events,attachments:[]}); };
+  mk(C1,'Payments page timing out','The payments page takes about 60 seconds and then shows an error.','Product bug','P0','submitted','',null,now-2*H,[ev('submitted',now-2*H,'Issue submitted — our team will review shortly','','customer','Asha Rao')]);
+  mk(C2,'Invoice PDF shows wrong tax total','Tax on the PDF does not match the dashboard.','Billing','P2','in_progress','Billing',3,now-1*D,[ev('submitted',now-D,'','','customer','Bala Iyer'),ev('in_review',now-D+2*H,'Triaged & prioritized','','company','Vishnu Reddy'),ev('in_progress',now-20*H,'Billing is now working on it','','company','Meera Nair')]);
+  mk(C3,'SSO login loops for new staff','New employees get stuck in a redirect loop on Okta sign-in.','Account & access','P1','awaiting_customer','Engineering',2,now-3*D,[ev('submitted',now-3*D,'','','customer','Tom Reyes'),ev('in_review',now-3*D+4*H,'Triaged & prioritized','','company','Vishnu Reddy'),ev('awaiting_customer',now-6*H,'','','company','Kiran Dev'),ev('note',now-6*H,'Which Okta group are the new staff in?','Asked customer','company','Kiran Dev')]);
+  const pub=u=>({id:u.id,email:u.email,name:u.name,role:u.role,team:u.team,isAdmin:u.isAdmin,active:u.active,initials:ini(u.name)});
+  const OPEN=['submitted','in_review','in_progress','awaiting_customer'];
+  const agentOut=u=>Object.assign(pub(u),{openAssigned:tickets.filter(t=>t.assigneeId===u.id&&OPEN.includes(t.status)).length});
+  const out=t=>{const a=users.find(u=>u.id===t.assigneeId); const c=Object.assign({},t,{assignee:a?{id:a.id,name:a.name,initials:ini(a.name)}:null,attachmentCount:t.attachments.length}); delete c.assigneeId; return c;};
+  const res=(code,body)=>new Response(JSON.stringify(body),{status:code,headers:{'Content-Type':'application/json'}});
+  const meOf=h=>{const m=((h&&(h.Authorization||h.authorization))||'').match(/mock\.(\d+)/); const u=m&&users.find(x=>x.id===+m[1]); return u&&u.active?u:null;};
+  const tmp=()=>Math.random().toString(36).slice(2,8)+Math.random().toString(36).slice(2,6).toUpperCase();
+  function setStatus(t,s,u){ if(s===t.status) return; t.status=s; const T=Date.now(); if(s==='resolved'&&!t.resolvedAt)t.resolvedAt=T; if(s==='closed'){t.closedAt=T; if(!t.resolvedAt)t.resolvedAt=T;} if(!['resolved','closed'].includes(s))t.closedAt=null; t.events.push(ev(s,T,'','','company',u.name)); }
+  const real=window.fetch.bind(window);
+  window.fetch=async function(url,opt={}){
+    if(typeof url!=='string'||!url.startsWith(API)) return real(url,opt);
+    await new Promise(r=>setTimeout(r,250));
+    const path=url.slice(API.length), m=(opt.method||'GET').toUpperCase(), body=opt.body?JSON.parse(opt.body):{};
+    if(path==='/auth/login'){ const u=users.find(x=>x.email===(body.email||'').toLowerCase()&&x.password===body.password);
+      if(!u) return res(401,{error:'Email or password is incorrect.'}); if(!u.active) return res(403,{error:'This account has been deactivated. Contact your admin.'});
+      return res(200,{access_token:'mock.'+u.id,user:pub(u)}); }
+    const u=meOf(opt.headers); if(!u) return res(401,{error:'Please sign in.'});
+    if(path==='/auth/me') return res(200,pub(u));
+    if(path==='/auth/password'){ if(body.current!==u.password) return res(400,{error:'Your current password is incorrect.'}); if((body.new||'').length<8) return res(400,{error:'Use at least 8 characters.'}); u.password=body.new; return res(200,{message:'ok'}); }
+    if(path==='/agents'&&m==='GET') return res(200,users.map(agentOut));
+    if(path==='/agents'&&m==='POST'){ if(!u.isAdmin) return res(403,{error:'Only admins can add teammates.'});
+      const e=(body.email||'').toLowerCase(); if(users.some(x=>x.email===e)) return res(409,{error:'This email is already used by a teammate.'});
+      const pw=tmp(); const n={id:users.length+1,email:e,password:pw,name:body.name,role:'company',team:body.team,isAdmin:!!body.isAdmin,active:true}; users.push(n);
+      return res(201,Object.assign(agentOut(n),{tempPassword:pw})); }
+    let mm=path.match(/^\/agents\/(\d+)$/);
+    if(mm){ if(!u.isAdmin) return res(403,{error:'Only admins can change teammates.'}); const a=users.find(x=>x.id===+mm[1]); const extra={};
+      if(a.id===u.id&&(body.active===false||body.isAdmin===false)) return res(400,{error:"You can't do that to your own account."});
+      if('isAdmin' in body) a.isAdmin=!!body.isAdmin;
+      if('active' in body){ a.active=!!body.active; if(!a.active) tickets.forEach(t=>{ if(t.assigneeId===a.id&&OPEN.includes(t.status)) t.assigneeId=null; }); }
+      if(body.resetPassword){ a.password=tmp(); extra.tempPassword=a.password; }
+      return res(200,Object.assign(agentOut(a),extra)); }
+    if(path==='/tickets') return res(200,[...tickets].sort((a,b)=>b.updatedAt-a.updatedAt).map(out));
+    mm=path.match(/^\/tickets\/([^/]+)(\/messages)?$/); const t=mm&&tickets.find(x=>x.id===decodeURIComponent(mm[1]));
+    if(!t) return res(404,{error:'Ticket not found'});
+    const T=Date.now();
+    if(!mm[2]&&m==='GET') return res(200,out(t));
+    if(!mm[2]&&m==='PATCH'){
+      if('priority' in body && body.priority!==t.priority){ t.priority=body.priority; if(t.status==='submitted'&&body.priority){ t.status='in_review'; t.events.push(ev('in_review',T,'Triaged & prioritized','','company',u.name)); } t.events.push(ev('note',T,body.priority?'Set to '+body.priority:'Cleared','Priority','company',u.name)); }
+      if('team' in body && (body.team||'')!==t.team){ t.team=body.team||''; t.events.push(ev('note',T,body.team?'Routed to '+body.team:'Unassigned','Assigned','company',u.name)); if(body.team&&(t.status==='in_review'||t.status==='submitted')){ t.status='in_progress'; t.events.push(ev('in_progress',T,body.team+' is now working on it','','company',u.name)); } }
+      if('assignee' in body && body.assignee!==t.assigneeId){ const a=users.find(x=>x.id===body.assignee); t.assigneeId=a?a.id:null;
+        t.events.push(ev('note',T,a?(a.id===u.id?u.name+' took this ticket':'Assigned to '+a.name):'Unassigned','Assignee','company',u.name));
+        if(a&&!t.team){ t.team=a.team; t.events.push(ev('note',T,'Routed to '+a.team,'Assigned','company',u.name)); if(t.status==='in_review'||t.status==='submitted'){ t.status='in_progress'; t.events.push(ev('in_progress',T,a.team+' is now working on it','','company',u.name)); } } }
+      if('status' in body) setStatus(t,body.status,u);
+      t.updatedAt=T; return res(200,out(t)); }
+    if(mm[2]){ if(body.kind==='request_info'){ setStatus(t,'awaiting_customer',u); if(body.message) t.events.push(ev('note',T,body.message,'Asked customer','company',u.name)); }
+      else { if(!body.message) return res(400,{error:'Write an update first.'}); t.events.push(ev('note',T,body.message,'Reply to customer','company',u.name)); }
+      t.updatedAt=T; return res(200,out(t)); }
+    return res(404,{error:'Not found'});
+  };
+  const samples=[['Cannot generate invoices — billing run blocked','Invoice generation fails for all customers since this morning.',C3,'bug'],['Add a Download PDF button on the reports page','We want to download the monthly report as PDF.',C1,'enhancement'],['Users cannot log in after password reset','Every reset password is rejected at login.',C2,'bug']];
+  window.__newCustomerIssue=function(){ const s=samples[(seq)%samples.length]; const T=Date.now();
+    tickets.push({id:'TKT-'+(++seq),customer:s[2],title:s[0],desc:s[1],category:s[3]==='bug'?'Product bug':'Feature request',type:s[3],priority:s[3]==='bug'?'P0':null,status:'submitted',team:'',assigneeId:null,createdAt:T,updatedAt:T,resolvedAt:null,closedAt:null,attachments:[],events:[ev('submitted',T,'Issue submitted — our team will review shortly','','customer',s[2].name)]});
+    if(typeof refresh==='function' && document.getElementById('appScreen').style.display!=='none') refresh(true); };
+  document.addEventListener('DOMContentLoaded',()=>{ const b=document.createElement('div');
+    b.style.cssText='position:fixed;z-index:9999;left:50%;bottom:14px;transform:translateX(-50%);background:#151B27;color:#fff;font:500 12.5px "IBM Plex Sans",sans-serif;padding:8px 10px 8px 14px;border-radius:12px;box-shadow:0 6px 24px rgba(0,0,0,.25);display:flex;gap:10px;align-items:center;max-width:calc(100vw - 32px);flex-wrap:wrap';
+    b.innerHTML='<span>Preview · admin@finnoto.com (admin) or kiran@finnoto.com / demo1234</span><button onclick="__newCustomerIssue()" style="background:#C77B30;color:#fff;border:0;border-radius:8px;padding:6px 10px;font:600 12px inherit;cursor:pointer">Simulate customer issue</button>';
+    document.body.appendChild(b); });
+})();
+
+</script>
 <style>
   :root{
     --ink:#151B27; --ink-2:#1E2737; --ink-3:#2A3548;
@@ -292,35 +370,6 @@
   .toast svg{width:17px;height:17px;color:#E0A861}
 
   .menu-btn{display:none}
-  .top-actions{display:flex;align-items:center;gap:10px}
-  .bell-wrap{position:relative}
-  .bell{position:relative;width:40px;height:40px;border-radius:10px;border:1px solid var(--line-strong);background:var(--surface);color:#3D4658;cursor:pointer;display:grid;place-items:center}
-  .bell:hover{background:#F4F6FA}
-  .bell svg{width:19px;height:19px}
-  .bell .dot{position:absolute;top:-6px;right:-6px;min-width:19px;height:19px;padding:0 5px;border-radius:999px;background:var(--danger);color:#fff;font-size:11px;font-weight:700;display:grid;place-items:center;border:2px solid var(--surface)}
-  .bell .dot[hidden]{display:none}
-  .bell.ring svg{animation:ring .9s ease-in-out 2}
-  @keyframes ring{0%,100%{transform:rotate(0)}20%{transform:rotate(-14deg)}40%{transform:rotate(12deg)}60%{transform:rotate(-8deg)}80%{transform:rotate(5deg)}}
-  @media (prefers-reduced-motion:reduce){.bell.ring svg{animation:none}}
-  .notif-panel{position:absolute;right:0;top:48px;width:380px;max-width:calc(100vw - 32px);background:var(--surface);border:1px solid var(--line);border-radius:14px;box-shadow:0 18px 40px -12px rgba(21,27,39,.28);z-index:40;overflow:hidden}
-  .np-head{display:flex;justify-content:space-between;align-items:center;padding:13px 16px;border-bottom:1px solid var(--line)}
-  .np-head b{font-family:"Space Grotesk",sans-serif;font-size:15px}
-  .np-list{max-height:430px;overflow:auto}
-  .np-item{display:flex;gap:11px;padding:12px 16px;border-bottom:1px solid var(--line);cursor:pointer;text-align:left;width:100%;background:none;border-left:0;border-right:0;border-top:0;font:inherit;color:inherit}
-  .np-item:hover{background:#F7F9FC}
-  .np-item.unread{background:color-mix(in srgb,var(--accent) 7%,#fff)}
-  .np-ico{width:30px;height:30px;border-radius:9px;flex:none;display:grid;place-items:center;background:#EEF1F7;color:#3D4658}
-  .np-ico svg{width:15px;height:15px}
-  .np-ico.urgent{background:#FCEEEC;color:var(--danger)}
-  .np-ico.reply{background:#E6F0FB;color:#2F6DB5}
-  .np-body{min-width:0;flex:1}
-  .np-t{font-size:13px;line-height:1.4}
-  .np-t b{font-weight:600}
-  .np-s{font-size:12px;color:var(--muted);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-  .np-u{width:8px;height:8px;border-radius:50%;background:var(--accent);flex:none;margin-top:6px}
-  .np-empty{padding:28px 16px;text-align:center;color:var(--muted);font-size:13px}
-  .np-foot{padding:10px 16px;font-size:12px;color:var(--muted);display:flex;justify-content:space-between;align-items:center;gap:8px;background:#F7F9FC}
-  .np-foot button{background:none;border:0;padding:0;font:inherit;font-weight:600;color:var(--accent-deep);cursor:pointer}
   .urgent-tag{display:inline-block;margin-left:6px;font-size:10px;font-weight:700;letter-spacing:.04em;color:#fff;background:var(--danger);padding:2px 6px;border-radius:5px;vertical-align:1px}
   .team-grid{display:grid;grid-template-columns:minmax(0,1fr) 340px;gap:18px;align-items:start}
   @media (max-width:1020px){.team-grid{grid-template-columns:1fr}}
@@ -504,19 +553,10 @@
         <button class="menu-btn" onclick="openMenu()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg></button>
         <div><h1 id="pageTitle">Dashboard</h1><div class="sub" id="pageSub">Queue health across all customers</div></div>
       </div>
-      <div class="top-actions">
-      <div class="bell-wrap">
-        <button class="bell" id="bellBtn" onclick="toggleNotifs(event)" aria-label="Notifications" aria-haspopup="true">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
-          <span class="dot" id="bellDot" hidden></span>
-        </button>
-        <div class="notif-panel" id="notifPanel" hidden></div>
-      </div>
       <button class="btn btn-primary" onclick="go('queue')">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
         Open queue
       </button>
-      </div>
     </header>
     <div class="content" id="content"></div>
   </div>
@@ -582,72 +622,19 @@ async function api(path, opts={}){
 let tickets = [];
 let loadState='idle', loadError='';
 let agents = [];
+let _seen = null;   // ticket ids already known, for "new issue" alerts
 async function loadAgents(){ try{ agents = await api('/agents'); }catch(e){} }
-/* ---- notifications ---- */
-let notifs={unread:0, items:[]}, _notifIds=null, _panelOpen=false;
-const BASE_TITLE=document.title;
-function notifText(n){
-  const who=`<b>${esc(n.customer)}</b> · ${esc(n.company)}`;
-  if(n.kind==='new') return `${n.urgent?'<b style="color:var(--danger)">URGENT</b> ':''}New ${n.urgent?'issue':'request'} from ${who}`;
-  if(n.kind==='reply') return `${who} replied`;
-  if(n.kind==='images') return `${who} added images`;
-  return `Update from ${who}`;
-}
-function notifPlain(n){
-  const k = n.kind==='new' ? (n.urgent?'URGENT issue':'New request') : n.kind==='reply' ? 'Customer replied' : 'Images added';
-  return {title:`${k} · ${n.company}`, body:`${n.ticketId} ${n.title}${n.note?' — '+n.note:''}`};
-}
-const NICON={new:'<path d="M12 5v14M5 12h14"/>', urgent:'<path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>',
-  reply:'<path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>', images:'<rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="m21 15-5-5L5 21"/>'};
-function renderBell(){
-  const d=$('#bellDot'); if(!d) return;
-  d.hidden=!notifs.unread; d.textContent=notifs.unread>99?'99+':notifs.unread;
-  document.title=(notifs.unread?`(${notifs.unread}) `:'')+BASE_TITLE;
-  if(_panelOpen) renderPanel();
-}
-function renderPanel(){
-  const p=$('#notifPanel');
-  const perm = ('Notification' in window) ? Notification.permission : 'unsupported';
-  const items=notifs.items.map(n=>{ const cls=n.urgent?'urgent':(n.kind==='reply'?'reply':''); const ico=n.urgent?NICON.urgent:(NICON[n.kind]||NICON.new);
-    return `<button class="np-item ${n.unread?'unread':''}" onclick="openFromNotif('${esc(n.ticketId)}')">
-      <span class="np-ico ${cls}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${ico}</svg></span>
-      <span class="np-body"><div class="np-t">${notifText(n)}</div><div class="np-s">${esc(n.ticketId)} · ${esc(n.title)}${n.note?' — '+esc(n.note):''}</div><div class="np-s">${rel(n.at)}</div></span>
-      ${n.unread?'<span class="np-u"></span>':''}</button>`; }).join('');
-  p.innerHTML=`<div class="np-head"><b>Notifications</b><span style="font-size:12px;color:var(--muted)">${notifs.unread?notifs.unread+' new':'All caught up'}</span></div>
-    <div class="np-list">${items||'<div class="np-empty">No customer activity yet. New issues and replies will show up here.</div>'}</div>
-    <div class="np-foot">${perm==='granted'?'<span>Desktop alerts are on</span>':perm==='denied'?'<span>Desktop alerts are blocked in your browser settings</span>':perm==='unsupported'?'<span>Desktop alerts aren’t supported here</span>':'<span>Get alerts even when this tab is in the background</span><button onclick="enableDesktop(event)">Turn on desktop alerts</button>'}</div>`;
-}
-async function toggleNotifs(e){
-  e.stopPropagation(); _panelOpen=!_panelOpen; $('#notifPanel').hidden=!_panelOpen;
-  if(_panelOpen){ renderPanel(); if(notifs.unread){ try{ await api('/notifications/seen',{method:'POST'}); }catch(err){} notifs.unread=0; renderBell(); } }
-  else { notifs.items.forEach(n=>n.unread=false); }
-}
-function closeNotifs(){ if(!_panelOpen) return; _panelOpen=false; $('#notifPanel').hidden=true; notifs.items.forEach(n=>n.unread=false); }
-document.addEventListener('click',e=>{ if(_panelOpen && !e.target.closest('.bell-wrap')) closeNotifs(); });
-document.addEventListener('keydown',e=>{ if(e.key==='Escape') closeNotifs(); });
-function openFromNotif(id){ closeNotifs(); state.view='queue'; setNav('queue'); openTicket(id); }
-async function enableDesktop(e){ e.stopPropagation(); try{ await Notification.requestPermission(); }catch(err){} renderPanel(); }
-async function loadNotifs(){
-  try{
-    const n=await api('/notifications');
-    const fresh = _notifIds ? n.items.filter(x=>x.unread && !_notifIds.has(x.id)) : [];
-    _notifIds=new Set(n.items.map(x=>x.id));
-    notifs=n; renderBell();
-    if(fresh.length){
-      const top=fresh.find(x=>x.urgent)||fresh[0]; const pl=notifPlain(top);
-      toast(fresh.length>1?`${fresh.length} new notifications · ${pl.title}`:`${pl.title}: ${top.title}`);
-      const b=$('#bellBtn'); b.classList.remove('ring'); void b.offsetWidth; b.classList.add('ring');
-      if('Notification' in window && Notification.permission==='granted'){
-        fresh.slice(0,3).forEach(x=>{ const q=notifPlain(x); try{ const dn=new Notification(q.title,{body:q.body,tag:'rhq-'+x.id,requireInteraction:!!x.urgent}); dn.onclick=()=>{ window.focus(); openFromNotif(x.ticketId); dn.close(); }; }catch(err){} });
-      }
-    }
-  }catch(e){}
-}
-
 async function refresh(silent){
   if(!silent){ loadState='loading'; render(); }
   try{
-    const [list] = await Promise.all([api('/tickets'), loadAgents(), loadNotifs()]);
+    const [list] = await Promise.all([api('/tickets'), loadAgents()]);
+    if(_seen){
+      const fresh=list.filter(t=>!_seen.has(t.id));
+      const urgent=fresh.filter(t=>t.type==='bug');
+      if(urgent.length) toast(urgent.length===1 ? `URGENT issue from ${urgent[0].customer.company}: ${urgent[0].title}` : `${urgent.length} new URGENT customer issues`);
+      else if(fresh.length) toast(fresh.length===1 ? `New request from ${fresh[0].customer.company}: ${fresh[0].title}` : `${fresh.length} new customer issues`);
+    }
+    _seen=new Set(list.map(t=>t.id));
     tickets=list; loadState='ready';
   }
   catch(e){ if(!silent){ loadState='error'; loadError=e.message; } }
@@ -1095,14 +1082,12 @@ function showApp(){
   state.current=null; state.view='dashboard'; state.filter='all'; state.prio='all'; state.cust='all';
   setNav('dashboard'); window.scrollTo(0,0); refresh();
   if(_poll) clearInterval(_poll);
-  _notifIds=null; notifs={unread:0,items:[]};
-  // tickets refresh while the tab is visible; notifications keep checking in the background too
-  _poll=setInterval(()=>{ if(document.visibilityState==='visible') refresh(true); else loadNotifs(); }, 20000);
+  _seen=null;
+  _poll=setInterval(()=>{ if(document.visibilityState==='visible') refresh(true); }, 30000);  // pick up new customer issues
 }
 function signOut(){ setToken(null); tickets=[]; loadState='idle'; showLogin(); }
 function showLogin(msg){
   if(_poll){ clearInterval(_poll); _poll=null; }
-  if(typeof closeNotifs==='function') closeNotifs(); document.title=BASE_TITLE;
   state.current=null;
   document.getElementById('appScreen').style.display='none';
   document.getElementById('loginScreen').style.display='';

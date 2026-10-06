@@ -45,3 +45,6 @@ Thumbs.db
 *.xlsx
 *resume*
 *cert*
+# keep the env template
+!.env.example
+backend/uploads/

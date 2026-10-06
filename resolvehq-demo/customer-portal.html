@@ -7,7 +7,197 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
-<script src="config.js"></script>
+<script>
+/* PREVIEW ONLY: one in-browser demo "server" shared by the customer portal and the company console.
+   Data is kept in this browser (localStorage), so an issue raised in the customer portal shows up
+   in the company console opened in the same browser. "Reset demo" restores the sample data. */
+(function(){
+  const API='https://preview.resolvehq/api'; window.RESOLVEHQ_API=API;
+  const KEY='rhq_demo_db_v2', H=3600e3, D=24*H;
+  const PUBLIC=new Set(['gmail.com','yahoo.com','outlook.com','hotmail.com','icloud.com','live.com','aol.com','proton.me','protonmail.com','rediffmail.com','yahoo.co.in','zoho.com']);
+  const ini=n=>(n||'').split(/\s+/).filter(Boolean).slice(0,2).map(w=>w[0]).join('').toUpperCase()||'?';
+  const dom=e=>{const d=(e||'').split('@')[1]; return d&&!PUBLIC.has(d)?d:null;};
+  const OPEN=['submitted','in_review','in_progress','awaiting_customer'];
+  const SHOW=new Set(['Reply to customer','Asked customer','Customer reply','Customer added images']);
+  const NK={'Customer reply':'reply','Customer added images':'images'};
+
+  function seed(){
+    const now=Date.now(); let ev=0; const E=(stage,at,note,label,by,author)=>({id:++ev,stage,at,note:note||'',label:label||'',by,author:author||''});
+    const users=[
+      {id:1,email:'admin@finnoto.com',password:'demo1234',name:'Vishnu Reddy',role:'company',team:'Support',isAdmin:true,active:true,createdAt:now-30*D},
+      {id:2,email:'kiran@finnoto.com',password:'demo1234',name:'Kiran Dev',role:'company',team:'Engineering',isAdmin:false,active:true,createdAt:now-30*D},
+      {id:3,email:'meera@finnoto.com',password:'demo1234',name:'Meera Nair',role:'company',team:'Billing',isAdmin:false,active:true,createdAt:now-30*D},
+      {id:10,email:'demo@client.com',password:'demo1234',name:'Ravi Kumar',company:'Client Co',role:'customer',active:true,createdAt:now-20*D},
+      {id:11,email:'priya@client.com',password:'demo1234',name:'Priya Shah',company:'Client Co',role:'customer',active:true,createdAt:now-20*D},
+      {id:12,email:'tom@globex.com',password:'demo1234',name:'Tom Reyes',company:'Globex',role:'customer',active:true,createdAt:now-20*D},
+    ];
+    const T=(id,owner,title,desc,cat,type,prio,status,team,assignee,created,events)=>({id:'TKT-'+id,ownerId:owner,title,desc,category:cat,type,priority:prio,status,team,assigneeId:assignee,createdAt:created,updatedAt:events[events.length-1].at,resolvedAt:null,closedAt:null,attachments:[],events});
+    const tickets=[
+      T(1001,10,'Invoice PDF shows wrong tax total','The downloaded invoice PDF lists a tax amount that does not match the dashboard figure.','Invoice','bug','P2','in_progress','Billing',3,now-26*H,
+        [E('submitted',now-26*H,'Issue submitted — our team will review shortly','','customer','Ravi Kumar'),E('in_review',now-20*H,'Triaged & prioritized','','company','Vishnu Reddy'),E('note',now-20*H,'Set to P2','Priority','company','Vishnu Reddy'),E('note',now-20*H,'Routed to Billing','Assigned','company','Vishnu Reddy'),E('in_progress',now-20*H,'Billing is now working on it','','company','Vishnu Reddy'),E('note',now-19*H,'Assigned to Meera Nair','Assignee','company','Vishnu Reddy')]),
+      T(1002,11,'GRN not linking to purchase order','After posting a GRN, it does not show against the PO.','GRN','enhancement',null,'submitted','',null,now-5*H,
+        [E('submitted',now-5*H,'Issue submitted — our team will review shortly','','customer','Priya Shah')]),
+      T(1003,12,'Credit note not reducing outstanding','Credit note posted but vendor balance unchanged.','Credit note','bug','P1','awaiting_customer','Engineering',2,now-3*D,
+        [E('submitted',now-3*D,'Issue submitted — our team will review shortly','','customer','Tom Reyes'),E('in_review',now-3*D+4*H,'Triaged & prioritized','','company','Vishnu Reddy'),E('awaiting_customer',now-6*H,'','','company','Kiran Dev'),E('note',now-6*H,'Which credit note number is it?','Asked customer','company','Kiran Dev'),E('note',now-90*60e3,'CN-118 for vendor Apex Traders','Customer reply','customer','Tom Reyes')]),
+    ];
+    return {users,tickets,seq:1003,evSeq:ev,seen:{1:now-3*H,2:now-3*H,3:now-3*H}};
+  }
+  let mem=null;
+  // Side-by-side test page: both portals run in frames of one page and share the parent's store directly.
+  const HOST=(()=>{ try{ if(window.parent!==window && window.parent.__RHQ_HOST) return window.parent; }catch(e){} return null; })();
+  function load(){
+    if(HOST){ if(!HOST.__RHQ_DB){ let d=null; try{ const r=localStorage.getItem(KEY); if(r) d=JSON.parse(r); }catch(e){} HOST.__RHQ_DB=d||seed(); } return HOST.__RHQ_DB; }
+    try{ const r=localStorage.getItem(KEY); if(r) return JSON.parse(r); }catch(e){} if(!mem) mem=seed(); return mem;
+  }
+  function save(db){
+    mem=db; try{ localStorage.setItem(KEY, JSON.stringify(db)); }catch(e){}
+    if(HOST){ HOST.__RHQ_DB=db; try{ HOST.__rhqChanged(window); }catch(e){} }
+  }
+  window.__resetDemo=function(){ try{ localStorage.removeItem(KEY); }catch(e){} mem=null;
+    if(HOST){ HOST.__RHQ_DB=seed(); try{ localStorage.setItem(KEY, JSON.stringify(HOST.__RHQ_DB)); }catch(e){} HOST.location.reload(); return; }
+    save(seed()); location.reload(); };
+  // called by the side-by-side page when the other portal changed something
+  window.__rhqExternalChange=function(){
+    if(typeof refresh==='function' && document.getElementById('appScreen') && document.getElementById('appScreen').style.display!=='none'){
+      try{ if(typeof loadNotifs==='function') loadNotifs(); refresh(true); }catch(err){}
+    } };
+
+  const res=(code,body)=>new Response(JSON.stringify(body),{status:code,headers:{'Content-Type':'application/json'}});
+  const pub=u=>({id:u.id,email:u.email,name:u.name,role:u.role,company:u.company||null,team:u.team||null,isAdmin:!!u.isAdmin,active:u.active!==false,initials:ini(u.name),teamDomain:u.role==='customer'?dom(u.email):null});
+  function out(db,t,viewer){
+    const owner=db.users.find(u=>u.id===t.ownerId)||{name:'?',email:'',company:''};
+    const a=db.users.find(u=>u.id===t.assigneeId);
+    const c={id:t.id,title:t.title,desc:t.desc,category:t.category,type:t.type,priority:t.priority,status:t.status,team:t.team||'',
+      assignee:a?{id:a.id,name:a.name,initials:ini(a.name)}:null,
+      customer:{name:owner.name,email:owner.email,company:owner.company,initials:ini(owner.name)},
+      createdAt:t.createdAt,updatedAt:t.updatedAt,resolvedAt:t.resolvedAt,closedAt:t.closedAt,
+      events:t.events.slice(),attachmentCount:t.attachments.length,attachments:t.attachments.slice()};
+    if(viewer&&viewer.role==='customer'){
+      c.mine=t.ownerId===viewer.id; c.team=''; c.assignee=null;
+      c.events=t.events.filter(e=>e.stage!=='note'||SHOW.has(e.label)).map(e=>e.by==='company'?Object.assign({},e,{author:'',note:e.stage==='note'?e.note:''}):e);
+    }
+    return c;
+  }
+  const visibleTo=(db,u,t)=>{ if(u.role==='company') return true; if(t.ownerId===u.id) return true; const o=db.users.find(x=>x.id===t.ownerId); return !!(dom(u.email)&&o&&dom(o.email)===dom(u.email)); };
+  function log(db,t,stage,u,label,note){ t.events.push({id:++db.evSeq,stage,at:Date.now(),note:note||'',label:label||'',by:u?u.role:'system',author:u?u.name:''}); }
+  function setStatus(db,t,s,u){ if(s===t.status) return; t.status=s; const T=Date.now(); if(s==='resolved'&&!t.resolvedAt)t.resolvedAt=T; if(s==='closed'){t.closedAt=T; if(!t.resolvedAt)t.resolvedAt=T;} if(!['resolved','closed'].includes(s))t.closedAt=null; log(db,t,s,u); }
+  // shrink screenshots so the shared demo store stays small
+  function shrink(file){ return new Promise(ok=>{ const r=new FileReader(); r.onload=()=>{ const img=new Image(); img.onload=()=>{ const k=Math.min(1,1100/Math.max(img.width,img.height)); const cv=document.createElement('canvas'); cv.width=Math.round(img.width*k); cv.height=Math.round(img.height*k); cv.getContext('2d').drawImage(img,0,0,cv.width,cv.height); ok(cv.toDataURL('image/jpeg',0.72)); }; img.onerror=()=>ok(r.result); img.src=r.result; }; r.readAsDataURL(file); }); }
+  async function addImages(db,t,files,u){
+    if(t.attachments.length+files.length>5) return 'You can attach up to 5 images per issue.';
+    for(const f of files){ if(f.size>5*1024*1024) return '“'+f.name+'” is larger than 5 MB.'; }
+    for(const f of files){ t.attachments.push({id:++db.evSeq,name:f.name,type:'image/jpeg',size:f.size,url:await shrink(f)}); }
+    return null;
+  }
+
+  const real=window.fetch.bind(window);
+  window.fetch=async function(url,opt={}){
+    if(typeof url!=='string'||!url.startsWith(API)) return real(url,opt);
+    await new Promise(r=>setTimeout(r,250));
+    const db=load(); const path=url.slice(API.length).split('?')[0], m=(opt.method||'GET').toUpperCase();
+    const isForm=opt.body instanceof FormData; const body=(!isForm&&opt.body)?JSON.parse(opt.body):{};
+    const h=opt.headers||{}; const mt=((h.Authorization||h.authorization)||'').match(/mock\.(\d+)/);
+    const u=mt&&db.users.find(x=>x.id===+mt[1]&&x.active!==false);
+    const T=Date.now();
+
+    if(path==='/auth/register'){ const e=(body.email||'').toLowerCase();
+      if(db.users.some(x=>x.email===e)) return res(409,{error:'An account with this email already exists. Try signing in.',fields:{email:'Already registered.'}});
+      const n={id:Math.max(...db.users.map(x=>x.id))+1,email:e,password:body.password,name:body.name,company:body.company,role:'customer',active:true,createdAt:T};
+      db.users.push(n); save(db); return res(201,{access_token:'mock.'+n.id,user:pub(n)}); }
+    if(path==='/auth/login'){ const x=db.users.find(v=>v.email===(body.email||'').toLowerCase()&&v.password===body.password);
+      if(!x) return res(401,{error:'Email or password is incorrect.'});
+      if(x.active===false) return res(403,{error:'This account has been deactivated. Contact your admin.'});
+      if(body.role&&body.role!==x.role) return res(403,{error:'This account belongs to the '+(x.role==='company'?'company console':'customer portal')+'.'});
+      return res(200,{access_token:'mock.'+x.id,user:pub(x)}); }
+    if(!u) return res(401,{error:'Please sign in.'});
+    if(path==='/auth/me') return res(200,pub(u));
+    if(path==='/auth/password'){ if(body.current!==u.password) return res(400,{error:'Your current password is incorrect.'}); if((body.new||'').length<8) return res(400,{error:'Use at least 8 characters.'}); u.password=body.new; save(db); return res(200,{message:'ok'}); }
+
+    // ----- company-only
+    if(path.startsWith('/agents')||path.startsWith('/notifications')){
+      if(u.role!=='company') return res(403,{error:'Company access only.'});
+      const agentOut=a=>Object.assign(pub(a),{openAssigned:db.tickets.filter(t=>t.assigneeId===a.id&&OPEN.includes(t.status)).length});
+      if(path==='/notifications/seen'){ db.seen[u.id]=T; save(db); return res(200,{unread:0}); }
+      if(path==='/notifications'){ const seen=db.seen[u.id]??u.createdAt; const items=[];
+        db.tickets.forEach(t=>t.events.forEach(e=>{ if(e.by!=='customer'||!(e.stage==='submitted'||NK[e.label])) return; const kind=e.stage==='submitted'?'new':NK[e.label]; const o=db.users.find(x=>x.id===t.ownerId)||{};
+          items.push({id:e.id,kind,ticketId:t.id,title:t.title,company:o.company||'',customer:e.author||o.name,urgent:kind==='new'&&t.type==='bug',priority:t.priority,note:kind==='new'?'':e.note,at:e.at,unread:e.at>seen}); }));
+        items.sort((a,b)=>b.at-a.at); return res(200,{unread:items.filter(i=>i.unread).length,items:items.slice(0,30)}); }
+      const agents=db.users.filter(x=>x.role==='company');
+      if(path==='/agents'&&m==='GET') return res(200,agents.map(agentOut));
+      if(!u.isAdmin) return res(403,{error:'Only admins can manage teammates.'});
+      if(path==='/agents'&&m==='POST'){ const e=(body.email||'').toLowerCase(); if(db.users.some(x=>x.email===e)) return res(409,{error:'This email is already in use.'});
+        const pw=Math.random().toString(36).slice(2,8)+Math.random().toString(36).slice(2,6).toUpperCase();
+        const n={id:Math.max(...db.users.map(x=>x.id))+1,email:e,password:pw,name:body.name,role:'company',team:body.team,isAdmin:!!body.isAdmin,active:true,createdAt:T};
+        db.users.push(n); save(db); return res(201,Object.assign(agentOut(n),{tempPassword:pw})); }
+      const am=path.match(/^\/agents\/(\d+)$/); const a=am&&agents.find(x=>x.id===+am[1]); if(!a) return res(404,{error:'Teammate not found.'});
+      if(a.id===u.id&&(body.active===false||body.isAdmin===false)) return res(400,{error:"You can't do that to your own account."});
+      const extra={}; if('isAdmin' in body) a.isAdmin=!!body.isAdmin;
+      if('active' in body){ a.active=!!body.active; if(!a.active) db.tickets.forEach(t=>{ if(t.assigneeId===a.id&&OPEN.includes(t.status)) t.assigneeId=null; }); }
+      if(body.resetPassword){ a.password=Math.random().toString(36).slice(2,10); extra.tempPassword=a.password; }
+      save(db); return res(200,Object.assign(agentOut(a),extra));
+    }
+
+    // ----- tickets
+    if(path==='/tickets'&&m==='GET') return res(200,db.tickets.filter(t=>visibleTo(db,u,t)).sort((a,b)=>b.updatedAt-a.updatedAt).map(t=>out(db,t,u)));
+    if(path==='/tickets'&&m==='POST'){
+      if(u.role!=='customer') return res(403,{error:'Only customers can submit issues.'});
+      const f=opt.body, type=f.get('type'), cat=f.get('category');
+      const fields={}; if(!f.get('title')) fields.title='Please add a title.'; if(!f.get('description')) fields.description='Please describe the issue.';
+      if(!['bug','enhancement'].includes(type)) fields.type='Choose Urgent fix or Feature change.'; if(!cat) fields.category='Please choose a category.';
+      if(Object.keys(fields).length) return res(400,{error:'Please fill in the required fields.',fields});
+      const t={id:'TKT-'+(++db.seq),ownerId:u.id,title:f.get('title'),desc:f.get('description'),category:cat,type,priority:type==='bug'?'P0':null,status:'submitted',team:'',assigneeId:null,createdAt:T,updatedAt:T,resolvedAt:null,closedAt:null,attachments:[],events:[]};
+      log(db,t,'submitted',u,'','Issue submitted — our team will review shortly');
+      if(type==='bug') log(db,t,'note',u,'Priority','Set to P0 — customer marked this as an urgent fix');
+      const er=await addImages(db,t,f.getAll('files'),u); if(er) return res(400,{error:er});
+      db.tickets.push(t); save(db); return res(201,out(db,t,u)); }
+    const mm=path.match(/^\/tickets\/([^/]+)(\/attachments|\/messages)?$/);
+    const t=mm&&db.tickets.find(x=>x.id===decodeURIComponent(mm[1]));
+    if(!t||!visibleTo(db,u,t)) return res(404,{error:'Ticket not found'});
+    if(!mm[2]&&m==='GET') return res(200,out(db,t,u));
+    if(u.role==='customer'&&t.ownerId!==u.id&&mm[2]) return res(403,{error:'Only the person who raised this issue can reply.'});
+    if(mm[2]==='/attachments'){ const er=await addImages(db,t,opt.body.getAll('files'),u); if(er) return res(400,{error:er});
+      const k=opt.body.getAll('files').length; log(db,t,'note',u,'Customer added images',k+' image'+(k>1?'s':'')+' attached'); t.updatedAt=Date.now(); save(db); return res(201,out(db,t,u)); }
+    if(mm[2]==='/messages'){
+      if(u.role==='company'){
+        if(body.kind==='request_info'){ setStatus(db,t,'awaiting_customer',u); if(body.message) log(db,t,'note',u,'Asked customer',body.message); }
+        else { if(!body.message) return res(400,{error:'Write an update first.'}); log(db,t,'note',u,'Reply to customer',body.message); }
+      } else {
+        if(!body.message) return res(400,{error:'Write a message first.'}); if(t.status==='closed') return res(400,{error:'This ticket is closed. Please raise a new issue.'});
+        log(db,t,'note',u,'Customer reply',body.message); if(t.status==='awaiting_customer') setStatus(db,t,t.team?'in_progress':'in_review',u);
+      }
+      t.updatedAt=Date.now(); save(db); return res(200,out(db,t,u)); }
+    if(m==='PATCH'){
+      if(u.role!=='company') return res(403,{error:'Only company agents can update tickets.'});
+      if('priority' in body && (body.priority||null)!==t.priority){ t.priority=body.priority||null; if(t.status==='submitted'&&t.priority){ t.status='in_review'; log(db,t,'in_review',u,'','Triaged & prioritized'); } log(db,t,'note',u,'Priority',t.priority?'Set to '+t.priority:'Cleared'); }
+      if('team' in body && (body.team||'')!==t.team){ t.team=body.team||''; log(db,t,'note',u,'Assigned',t.team?'Routed to '+t.team:'Unassigned'); if(t.team&&['submitted','in_review'].includes(t.status)){ t.status='in_progress'; log(db,t,'in_progress',u,'',t.team+' is now working on it'); } }
+      if('assignee' in body && (body.assignee||null)!==t.assigneeId){ const a=db.users.find(x=>x.id===body.assignee&&x.role==='company'); t.assigneeId=a?a.id:null;
+        log(db,t,'note',u,'Assignee',a?(a.id===u.id?u.name+' took this ticket':'Assigned to '+a.name):'Unassigned');
+        if(a&&!t.team){ t.team=a.team; log(db,t,'note',u,'Assigned','Routed to '+a.team); if(['submitted','in_review'].includes(t.status)){ t.status='in_progress'; log(db,t,'in_progress',u,'',a.team+' is now working on it'); } } }
+      if('status' in body) setStatus(db,t,body.status,u);
+      t.updatedAt=Date.now(); save(db); return res(200,out(db,t,u)); }
+    return res(404,{error:'Not found'});
+  };
+
+  // keep the other portal (open in another tab) in step
+  window.addEventListener('storage',e=>{ if(e.key!==KEY) return; mem=null;
+    if(typeof refresh==='function' && document.getElementById('appScreen') && document.getElementById('appScreen').style.display!=='none'){
+      try{ if(typeof loadNotifs==='function') loadNotifs(); refresh(true); }catch(err){}
+    } });
+
+  document.addEventListener('DOMContentLoaded',()=>{
+    if(HOST) return;  // the side-by-side page has its own controls
+    const isCo=/company/i.test(document.title);
+    const other=isCo?'customer-portal.html':'company-portal.html';
+    const b=document.createElement('div');
+    b.style.cssText='position:fixed;z-index:9999;left:50%;bottom:calc(14px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:#151B27;color:#fff;font:500 12.5px "IBM Plex Sans",system-ui,sans-serif;padding:8px 10px 8px 14px;border-radius:12px;box-shadow:0 6px 24px rgba(0,0,0,.25);display:flex;gap:10px;align-items:center;max-width:calc(100vw - 32px);flex-wrap:wrap';
+    b.innerHTML='<span>Demo · password demo1234 · '+(isCo?'admin@finnoto.com or kiran@finnoto.com':'demo@client.com or priya@client.com')+'</span>'
+      +'<a href="'+other+'" target="_blank" rel="noopener" style="color:#7fd9d0;font-weight:600;text-decoration:none">Open '+(isCo?'customer portal':'company console')+' ↗</a>'
+      +'<button onclick="__resetDemo()" style="background:transparent;color:#cfd6e2;border:1px solid #3a4558;border-radius:8px;padding:5px 9px;font:600 12px inherit;cursor:pointer">Reset demo</button>';
+    document.body.appendChild(b);
+  });
+})();
+
+</script>
 <style>
 /* ===== login screen ===== */
 
