@@ -39,8 +39,10 @@ def create_app(config_object=Config):
     def _deactivated(_header, _payload):
         return jsonify({"error": "Your account has been deactivated. Contact your admin."}), 401
 
-    from routes import agents, auth, files, tickets
+    from routes import agents, auth, files, notifications, push as push_routes, tickets
     app.register_blueprint(auth.bp)
+    app.register_blueprint(push_routes.bp)
+    app.register_blueprint(notifications.bp)
     app.register_blueprint(agents.bp)
     app.register_blueprint(tickets.bp)
     app.register_blueprint(files.bp)
@@ -64,6 +66,11 @@ def create_app(config_object=Config):
         db.create_all()
         _add_missing_columns()
         _bootstrap_admin(app)
+        try:
+            import push
+            push.ensure_keys()
+        except Exception:
+            app.logger.exception("could not prepare push keys")
         if app.config["SEED_DEMO"]:
             from seed_data import seed_demo_data
             seed_demo_data()
@@ -110,7 +117,8 @@ def _add_missing_columns():
     true_, false_ = ("TRUE", "FALSE") if pg else ("1", "0")
     wanted = {
         "users": {"is_admin": f"BOOLEAN NOT NULL DEFAULT {false_}",
-                  "active": f"BOOLEAN NOT NULL DEFAULT {true_}"},
+                  "active": f"BOOLEAN NOT NULL DEFAULT {true_}",
+                  "notif_seen_at": "TIMESTAMP"},
         "tickets": {"assignee_id": "INTEGER REFERENCES users(id)"},
     }
     with db.engine.begin() as conn:

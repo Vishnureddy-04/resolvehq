@@ -50,3 +50,9 @@ class Config:
     ADMIN_NAME = os.getenv("ADMIN_NAME", "Support Admin")
 
     SEED_DEMO = os.getenv("SEED_DEMO", "false").lower() == "true"
+
+    # Team alerts (optional): Slack incoming-webhook URL and the console address used in links
+    SLACK_WEBHOOK_URL = os.getenv("SLACK_WEBHOOK_URL", "").strip()
+    CONSOLE_URL = os.getenv("CONSOLE_URL", "").strip()
+    # Push alerts: contact address sent to browser push services (defaults to mailto:ADMIN_EMAIL)
+    VAPID_SUBJECT = os.getenv("VAPID_SUBJECT", "").strip()

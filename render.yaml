@@ -27,3 +27,7 @@ services:
         sync: false
       - key: ADMIN_PASSWORD
         sync: false
+      - key: SLACK_WEBHOOK_URL
+        sync: false
+      - key: CONSOLE_URL
+        value: https://resolvehq.vercel.app/company-portal

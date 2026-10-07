@@ -1,6 +1,7 @@
 from flask import Blueprint, current_app, jsonify, request
 from flask_jwt_extended import get_jwt_identity, jwt_required
 
+import notify
 import storage
 from extensions import db, limiter
 from models import Attachment, Ticket, TicketEvent, User, utcnow
@@ -9,8 +10,7 @@ from orgs import same_team, team_domain
 bp = Blueprint("tickets", __name__, url_prefix="/api/tickets")
 
 TYPES = {"bug", "enhancement", "support"}
-CATEGORIES = {"Product bug", "Onboarding", "Billing", "Feature request", "Integration",
-              "Account & access", "Other"}
+CATEGORIES = {"Purchase order", "Invoice", "GRN", "Credit note", "E-invoice", "Other"}
 STATUSES = {"submitted", "in_review", "in_progress", "awaiting_customer", "resolved", "closed"}
 PRIORITIES = {"P0", "P1", "P2", "P3"}
 TEAMS = {"Engineering", "Implementation", "Product", "Support", "Billing"}
@@ -117,7 +117,7 @@ def create_ticket():
     form = request.form if request.form else (request.get_json(silent=True) or {})
     title = (form.get("title") or "").strip()
     desc = (form.get("description") or "").strip()
-    category = (form.get("category") or "Other").strip()
+    category = (form.get("category") or "").strip()
     itype = (form.get("type") or "").strip()
 
     fields = {}
@@ -127,6 +127,8 @@ def create_ticket():
         fields["description"] = "Please describe the issue."
     if itype not in TYPES:
         fields["type"] = "Choose Urgent fix or Feature change."
+    if category not in CATEGORIES:
+        fields["category"] = "Please choose a category."
     if fields:
         return err("Please fill in the required fields.", fields=fields)
     if category not in CATEGORIES:
@@ -158,6 +160,7 @@ def create_ticket():
         current_app.logger.exception("ticket create failed")
         return err("We couldn't save your attachments. Please try again.", 502)
 
+    notify.new_ticket(t, image_count=len(images))
     return jsonify(detail(t, user)), 201
 
 
@@ -328,4 +331,6 @@ def post_message(code):
 
     t.updated_at = utcnow()
     db.session.commit()
+    if user.role == "customer":
+        notify.customer_reply(t, user.name, msg)
     return jsonify(detail(t, user)), 200

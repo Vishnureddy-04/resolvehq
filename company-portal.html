@@ -4,6 +4,12 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>Company console — ResolveHQ</title>
+<link rel="manifest" href="/manifest.webmanifest">
+<link rel="apple-touch-icon" href="/icons/apple-touch-icon.png">
+<meta name="theme-color" content="#151B27">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="ResolveHQ">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
@@ -293,6 +299,25 @@
 
   .menu-btn{display:none}
   .top-actions{display:flex;align-items:center;gap:10px}
+  .acct{position:relative}
+  .acct-btn{display:flex;align-items:center;gap:9px;padding:4px 10px 4px 4px;border:1px solid var(--line-strong);border-radius:999px;background:var(--surface);cursor:pointer;font:inherit;color:var(--text)}
+  .acct-btn:hover{background:#F4F6FA}
+  .acct-btn:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+  .acct-av{width:30px;height:30px;border-radius:50%;background:var(--accent);color:#fff;font-size:12px;font-weight:700;display:grid;place-items:center}
+  .acct-name{font-size:13px;font-weight:600;max-width:140px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .acct-btn svg{width:14px;height:14px;color:var(--muted)}
+  .acct-menu{position:absolute;right:0;top:46px;width:260px;max-width:calc(100vw - 32px);background:var(--surface);border:1px solid var(--line);border-radius:13px;box-shadow:0 18px 40px -12px rgba(21,27,39,.28);z-index:45;overflow:hidden}
+  .acct-menu[hidden]{display:none}
+  .acct-id{padding:14px 16px;border-bottom:1px solid var(--line)}
+  .acct-id .n{font-weight:600;font-size:14px}
+  .acct-id .e{font-size:12.5px;color:var(--muted);margin-top:2px;word-break:break-all}
+  .acct-id .c{font-size:12px;color:var(--muted);margin-top:4px}
+  .acct-item{display:flex;align-items:center;gap:9px;width:100%;padding:11px 16px;background:none;border:0;font:inherit;font-size:13.5px;color:var(--text);cursor:pointer;text-align:left}
+  .acct-item:hover{background:#F7F9FC}
+  .acct-item svg{width:16px;height:16px;color:var(--muted)}
+  .acct-item.out{color:var(--danger);font-weight:600}
+  .acct-item.out svg{color:var(--danger)}
+  @media (max-width:760px){ .acct-name,.acct-btn>svg{display:none} .acct-btn{padding:3px} }
   .bell-wrap{position:relative}
   .bell{position:relative;width:40px;height:40px;border-radius:10px;border:1px solid var(--line-strong);background:var(--surface);color:#3D4658;cursor:pointer;display:grid;place-items:center}
   .bell:hover{background:#F4F6FA}
@@ -320,6 +345,8 @@
   .np-u{width:8px;height:8px;border-radius:50%;background:var(--accent);flex:none;margin-top:6px}
   .np-empty{padding:28px 16px;text-align:center;color:var(--muted);font-size:13px}
   .np-foot{padding:10px 16px;font-size:12px;color:var(--muted);display:flex;justify-content:space-between;align-items:center;gap:8px;background:#F7F9FC}
+  .np-foot.alerts-off{background:#FFF6EA;color:#7A4A12}
+  .np-foot .np-ok{color:#2E7D4F;font-weight:600}
   .np-foot button{background:none;border:0;padding:0;font:inherit;font-weight:600;color:var(--accent-deep);cursor:pointer}
   .urgent-tag{display:inline-block;margin-left:6px;font-size:10px;font-weight:700;letter-spacing:.04em;color:#fff;background:var(--danger);padding:2px 6px;border-radius:5px;vertical-align:1px}
   .team-grid{display:grid;grid-template-columns:minmax(0,1fr) 340px;gap:18px;align-items:start}
@@ -516,6 +543,17 @@
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
         Open queue
       </button>
+      <div class="acct">
+        <button class="acct-btn" id="acctBtn" onclick="toggleAcct(event)" aria-haspopup="true" aria-label="Account menu">
+          <span class="acct-av" id="acctAv"></span><span class="acct-name" id="acctName"></span>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>
+        </button>
+        <div class="acct-menu" id="acctMenu" hidden>
+          <div class="acct-id"><div class="n" id="acctMName"></div><div class="e" id="acctMEmail"></div><div class="c" id="acctMCo"></div></div>
+          <button class="acct-item" onclick="closeAcct();go('team')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>Change password</button>
+          <button class="acct-item out" onclick="signOut()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>Sign out</button>
+        </div>
+      </div>
       </div>
     </header>
     <div class="content" id="content"></div>
@@ -581,6 +619,8 @@ async function api(path, opts={}){
 }
 let tickets = [];
 let loadState='idle', loadError='';
+// deep link from Slack alerts: company-portal#TKT-1001 opens that ticket after sign-in
+let _deepTicket = /^#TKT-\d+$/.test(location.hash) ? location.hash.slice(1) : null;
 let agents = [];
 async function loadAgents(){ try{ agents = await api('/agents'); }catch(e){} }
 /* ---- notifications ---- */
@@ -615,7 +655,7 @@ function renderPanel(){
       ${n.unread?'<span class="np-u"></span>':''}</button>`; }).join('');
   p.innerHTML=`<div class="np-head"><b>Notifications</b><span style="font-size:12px;color:var(--muted)">${notifs.unread?notifs.unread+' new':'All caught up'}</span></div>
     <div class="np-list">${items||'<div class="np-empty">No customer activity yet. New issues and replies will show up here.</div>'}</div>
-    <div class="np-foot">${perm==='granted'?'<span>Desktop alerts are on</span>':perm==='denied'?'<span>Desktop alerts are blocked in your browser settings</span>':perm==='unsupported'?'<span>Desktop alerts aren’t supported here</span>':'<span>Get alerts even when this tab is in the background</span><button onclick="enableDesktop(event)">Turn on desktop alerts</button>'}</div>`;
+    ${alertFooter()}`;
 }
 async function toggleNotifs(e){
   e.stopPropagation(); _panelOpen=!_panelOpen; $('#notifPanel').hidden=!_panelOpen;
@@ -626,7 +666,71 @@ function closeNotifs(){ if(!_panelOpen) return; _panelOpen=false; $('#notifPanel
 document.addEventListener('click',e=>{ if(_panelOpen && !e.target.closest('.bell-wrap')) closeNotifs(); });
 document.addEventListener('keydown',e=>{ if(e.key==='Escape') closeNotifs(); });
 function openFromNotif(id){ closeNotifs(); state.view='queue'; setNav('queue'); openTicket(id); }
-async function enableDesktop(e){ e.stopPropagation(); try{ await Notification.requestPermission(); }catch(err){} renderPanel(); }
+/* ---- device alerts (web push): pop-ups even when the console is closed ---- */
+let pushState='checking';   // checking | unsupported | ios-install | denied | off | on | busy
+let _swReg=null;
+const isIOS=/iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform==='MacIntel' && navigator.maxTouchPoints>1);
+const isStandalone=window.matchMedia('(display-mode: standalone)').matches || navigator.standalone===true;
+function b64ToBytes(b64){ const pad='='.repeat((4-b64.length%4)%4); const raw=atob((b64+pad).replace(/-/g,'+').replace(/_/g,'/')); return Uint8Array.from(raw,c=>c.charCodeAt(0)); }
+async function swReady(){
+  if(_swReg) return _swReg;
+  if(!('serviceWorker' in navigator)) return null;
+  try{ _swReg = await navigator.serviceWorker.register('/sw.js',{scope:'/'}); await navigator.serviceWorker.ready; }catch(e){ _swReg=null; }
+  return _swReg;
+}
+async function checkPush(){
+  const supported = 'serviceWorker' in navigator && 'PushManager' in window && 'Notification' in window;
+  if(!supported){ pushState = (isIOS && !isStandalone) ? 'ios-install' : 'unsupported'; renderPanelIfOpen(); return; }
+  if(Notification.permission==='denied'){ pushState='denied'; renderPanelIfOpen(); return; }
+  const reg=await swReady(); if(!reg){ pushState='unsupported'; renderPanelIfOpen(); return; }
+  const sub=await reg.pushManager.getSubscription();
+  if(sub && Notification.permission==='granted'){
+    try{ await api('/push/subscribe',{method:'POST',body:{subscription:sub.toJSON()}}); pushState='on'; }catch(e){ pushState='off'; }
+  } else pushState='off';
+  renderPanelIfOpen(); renderAlertNudge();
+}
+async function enablePush(e){
+  if(e) e.stopPropagation();
+  pushState='busy'; renderPanelIfOpen();
+  try{
+    const perm=await Notification.requestPermission();
+    if(perm!=='granted'){ pushState = perm==='denied'?'denied':'off'; renderPanelIfOpen(); toast(perm==='denied'?'Alerts were blocked. Allow notifications for this site in your browser settings.':'Alerts not turned on.'); return; }
+    const reg=await swReady(); if(!reg) throw new Error("This browser can't receive alerts.");
+    const {publicKey}=await api('/push/key');
+    let sub=await reg.pushManager.getSubscription();
+    if(!sub) sub=await reg.pushManager.subscribe({userVisibleOnly:true, applicationServerKey:b64ToBytes(publicKey)});
+    await api('/push/subscribe',{method:'POST',body:{subscription:sub.toJSON()}});
+    pushState='on'; renderPanelIfOpen(); renderAlertNudge();
+    try{ await api('/push/test',{method:'POST'}); toast('Alerts are on. A test alert is on its way.'); }catch(err){ toast('Alerts are on for this device.'); }
+  }catch(err){ pushState='off'; renderPanelIfOpen(); toast(/registration|push service|AbortError|denied/i.test((err&&err.name||'')+' '+(err&&err.message||'')) ? "This browser couldn't register for alerts. Check that notifications are allowed for this site and that you're online, then try again." : (err.message||'Could not turn on alerts.')); }
+}
+async function sendTestPush(e){ if(e) e.stopPropagation(); try{ await api('/push/test',{method:'POST'}); toast('Test alert sent to your devices.'); }catch(err){ toast(err.message); } }
+async function dropPushForSignOut(){
+  try{ const reg=await swReady(); const sub=reg && await reg.pushManager.getSubscription(); if(sub) await api('/push/unsubscribe',{method:'POST',body:{endpoint:sub.endpoint},noLogout:true}); }catch(e){}
+}
+function renderPanelIfOpen(){ if(typeof _panelOpen!=='undefined' && _panelOpen) renderPanel(); }
+function alertFooter(){
+  const m={
+    on:'<span class="np-ok">✓ Alerts are on for this device</span><button onclick="sendTestPush(event)">Send test</button>',
+    off:'<span>Get a pop-up for every new issue, even with this page closed</span><button onclick="enablePush(event)">Turn on alerts</button>',
+    busy:'<span>Turning on alerts…</span>',
+    checking:'<span>Checking alerts…</span>',
+    denied:'<span>Alerts are blocked. Click the 🔒 next to the address bar → Notifications → Allow, then reload.</span>',
+    'ios-install':'<span>On iPhone: tap Share → <b>Add to Home Screen</b>, open ResolveHQ from there, then turn on alerts.</span>',
+    unsupported:'<span>This browser can’t show alerts. Use Chrome, Edge, Firefox or Safari.</span>',
+  };
+  return `<div class="np-foot ${pushState==='on'?'':'alerts-off'}">${m[pushState]||m.off}</div>`;
+}
+function renderAlertNudge(){
+  const d=$('#bellDot'), b=$('#bellBtn'); if(!b) return;
+  b.title = pushState==='on' ? 'Notifications' : 'Notifications — turn on alerts for this device';
+}
+if('serviceWorker' in navigator){
+  navigator.serviceWorker.addEventListener('message', ev=>{
+    const d=ev.data||{}; if(d.type!=='open-ticket') return;
+    const m=String(d.url||'').match(/#(TKT-\d+)/); if(m && typeof openFromNotif==='function' && loadState==='ready') openFromNotif(m[1]);
+  });
+}
 async function loadNotifs(){
   try{
     const n=await api('/notifications');
@@ -637,7 +741,7 @@ async function loadNotifs(){
       const top=fresh.find(x=>x.urgent)||fresh[0]; const pl=notifPlain(top);
       toast(fresh.length>1?`${fresh.length} new notifications · ${pl.title}`:`${pl.title}: ${top.title}`);
       const b=$('#bellBtn'); b.classList.remove('ring'); void b.offsetWidth; b.classList.add('ring');
-      if('Notification' in window && Notification.permission==='granted'){
+      if(pushState!=='on' && 'Notification' in window && Notification.permission==='granted'){
         fresh.slice(0,3).forEach(x=>{ const q=notifPlain(x); try{ const dn=new Notification(q.title,{body:q.body,tag:'rhq-'+x.id,requireInteraction:!!x.urgent}); dn.onclick=()=>{ window.focus(); openFromNotif(x.ticketId); dn.close(); }; }catch(err){} });
       }
     }
@@ -649,6 +753,7 @@ async function refresh(silent){
   try{
     const [list] = await Promise.all([api('/tickets'), loadAgents(), loadNotifs()]);
     tickets=list; loadState='ready';
+    if(_deepTicket){ const id=_deepTicket; _deepTicket=null; try{ history.replaceState(null,'',location.pathname); }catch(e){} setTimeout(()=>openFromNotif(id),0); }
   }
   catch(e){ if(!silent){ loadState='error'; loadError=e.message; } }
   if(state.current){ const fresh=tickets.find(t=>t.id===state.current.id); if(fresh && fresh.updatedAt!==state.current.updatedAt) openTicket(fresh.id); }
@@ -1077,9 +1182,18 @@ function requestInfo(){ const v=($('#composer')?.value||'').trim(); act('/messag
 function postReply(){ const v=($('#composer')?.value||'').trim(); if(!v){ toast('Write an update first.'); return; } act('/messages',{method:'POST',body:{kind:'reply',message:v}},'Update posted'); }
 
 /* ---- init ---- */
+function toggleAcct(e){ e.stopPropagation(); const m=$('#acctMenu'); m.hidden=!m.hidden; }
+function closeAcct(){ const m=document.getElementById('acctMenu'); if(m) m.hidden=true; }
+document.addEventListener('click',e=>{ if(!e.target.closest('.acct')) closeAcct(); });
+document.addEventListener('keydown',e=>{ if(e.key==='Escape') closeAcct(); });
+function fillAcct(name,email,sub,initials){
+  $('#acctAv').textContent=initials; $('#acctName').textContent=name;
+  $('#acctMName').textContent=name; $('#acctMEmail').textContent=email||''; $('#acctMCo').textContent=sub||'';
+}
 function setUser(u){
   AGENT={id:u.id, name:u.name, email:u.email, isAdmin:!!u.isAdmin, team:u.team||'', role:(u.isAdmin?'Admin · ':'')+(u.team?u.team+' team':'Agent'), initials:u.initials||'?'};
   $('#whoName').textContent=AGENT.name; $('#whoRole').textContent=AGENT.role; $('#avatar').textContent=AGENT.initials;
+  fillAcct(AGENT.name, AGENT.email, AGENT.role, AGENT.initials);
 }
 let _poll=null;
 (async function boot(){
@@ -1094,12 +1208,13 @@ function showApp(){
   document.getElementById('appScreen').style.display='block';
   state.current=null; state.view='dashboard'; state.filter='all'; state.prio='all'; state.cust='all';
   setNav('dashboard'); window.scrollTo(0,0); refresh();
+  checkPush().then(()=>{ if(pushState==='off' || pushState==='ios-install'){ setTimeout(()=>toast('Get a pop-up for every new customer issue: click the 🔔 bell → Turn on alerts'),1500); } });
   if(_poll) clearInterval(_poll);
   _notifIds=null; notifs={unread:0,items:[]};
   // tickets refresh while the tab is visible; notifications keep checking in the background too
   _poll=setInterval(()=>{ if(document.visibilityState==='visible') refresh(true); else loadNotifs(); }, 20000);
 }
-function signOut(){ setToken(null); tickets=[]; loadState='idle'; showLogin(); }
+async function signOut(){ closeAcct(); await dropPushForSignOut(); pushState='off'; setToken(null); tickets=[]; loadState='idle'; showLogin('You have been signed out.'); }
 function showLogin(msg){
   if(_poll){ clearInterval(_poll); _poll=null; }
   if(typeof closeNotifs==='function') closeNotifs(); document.title=BASE_TITLE;

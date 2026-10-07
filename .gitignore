@@ -48,3 +48,8 @@ Thumbs.db
 # keep the env template
 !.env.example
 backend/uploads/
+
+# Downloads from the Claude app (previews, zips) — not part of the code
+Claude outputs/
+# Old backend replaced by backend/ (contains a virtualenv)
+backend CEIMP/

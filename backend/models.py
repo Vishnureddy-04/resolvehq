@@ -31,6 +31,7 @@ class User(db.Model):
     team = db.Column(db.String(100))                         # agent's team
     is_admin = db.Column(db.Boolean, default=False, nullable=False)   # agents: can manage teammates
     active = db.Column(db.Boolean, default=True, nullable=False)      # deactivated users can't sign in
+    notif_seen_at = db.Column(db.DateTime)                            # agents: notifications read up to here
     created_at = db.Column(db.DateTime, default=utcnow)
 
     def to_dict(self):
@@ -172,3 +173,27 @@ class Attachment(db.Model):
             "size": self.size_bytes,
             "url": url,
         }
+
+
+class AppSetting(db.Model):
+    """Small key/value store (e.g. the push-notification keys generated on first start)."""
+    __tablename__ = "app_settings"
+
+    key = db.Column(db.String(80), primary_key=True)
+    value = db.Column(db.Text, nullable=False)
+
+
+class PushSubscription(db.Model):
+    """One browser/phone where a teammate turned on alerts."""
+    __tablename__ = "push_subscriptions"
+
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=False, index=True)
+    endpoint = db.Column(db.Text, nullable=False, unique=True)
+    p256dh = db.Column(db.String(255), nullable=False)
+    auth = db.Column(db.String(255), nullable=False)
+    user_agent = db.Column(db.String(255))
+    created_at = db.Column(db.DateTime, default=utcnow)
+
+    def info(self):
+        return {"endpoint": self.endpoint, "keys": {"p256dh": self.p256dh, "auth": self.auth}}
