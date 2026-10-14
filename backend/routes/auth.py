@@ -5,7 +5,7 @@ from flask_jwt_extended import create_access_token, get_jwt_identity, jwt_requir
 from werkzeug.security import check_password_hash, generate_password_hash
 
 from extensions import db, limiter
-from models import User
+from models import User, utcnow
 
 bp = Blueprint("auth", __name__, url_prefix="/api/auth")
 
@@ -19,34 +19,8 @@ def _token_for(user):
 @bp.post("/register")
 @limiter.limit("10 per hour")
 def register():
-    """Public customer sign-up. Company agents cannot be created here."""
-    data = request.get_json(silent=True) or {}
-    name = (data.get("name") or "").strip()
-    company = (data.get("company") or "").strip()
-    email = (data.get("email") or "").strip().lower()
-    password = data.get("password") or ""
-
-    errors = {}
-    if not name:
-        errors["name"] = "Please enter your name."
-    if not company:
-        errors["company"] = "Please enter your company name."
-    if not EMAIL_RE.match(email):
-        errors["email"] = "Enter a valid email address."
-    if len(password) < 8:
-        errors["password"] = "Use at least 8 characters."
-    if errors:
-        return jsonify({"error": "Please fix the highlighted fields.", "fields": errors}), 400
-
-    if User.query.filter_by(email=email).first():
-        return jsonify({"error": "An account with this email already exists. Try signing in.",
-                        "fields": {"email": "Already registered."}}), 409
-
-    user = User(email=email, name=name[:255], company=company[:255], role="customer",
-                password_hash=generate_password_hash(password))
-    db.session.add(user)
-    db.session.commit()
-    return jsonify({"access_token": _token_for(user), "user": user.to_dict()}), 201
+    """Customer accounts are created by our team inside a business account (Clients tab)."""
+    return jsonify({"error": "Accounts are created by our team. Please contact your account manager for access."}), 403
 
 
 @bp.post("/login")
@@ -62,10 +36,14 @@ def login():
         return jsonify({"error": "Email or password is incorrect."}), 401
     if user.active is False:
         return jsonify({"error": "This account has been deactivated. Contact your admin."}), 403
+    if user.role == "customer" and (not user.business or user.business.active is False):
+        return jsonify({"error": "Your company's access is paused. Please contact your account manager."}), 403
     if role and role != user.role:
         where = "company console" if user.role == "company" else "customer portal"
         return jsonify({"error": f"This account belongs to the {where}."}), 403
 
+    user.last_login_at = utcnow()
+    db.session.commit()
     return jsonify({"access_token": _token_for(user), "user": user.to_dict()}), 200
 
 
@@ -90,6 +68,9 @@ def change_password():
         return jsonify({"error": "Your current password is incorrect.", "fields": {"current": "Incorrect."}}), 400
     if len(new) < 8:
         return jsonify({"error": "Use at least 8 characters.", "fields": {"new": "Too short."}}), 400
+    if new == current:
+        return jsonify({"error": "Choose a new password that's different from the temporary one.", "fields": {"new": "Same as before."}}), 400
     user.password_hash = generate_password_hash(new)
+    user.must_change_password = False
     db.session.commit()
     return jsonify({"message": "Password updated."}), 200

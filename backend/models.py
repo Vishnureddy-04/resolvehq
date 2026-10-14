@@ -1,6 +1,5 @@
 from datetime import datetime, timezone
 from extensions import db
-from orgs import team_domain
 
 
 def utcnow():
@@ -19,6 +18,31 @@ def initials(name):
     return ("".join(p[0] for p in parts[:2]) or "?").upper()
 
 
+class Business(db.Model):
+    """A client company. Our team creates it and adds its users."""
+    __tablename__ = "businesses"
+
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(255), nullable=False)
+    contact_email = db.Column(db.String(255))
+    phone = db.Column(db.String(50))
+    notes = db.Column(db.Text)
+    active = db.Column(db.Boolean, default=True, nullable=False)   # paused businesses can't sign in
+    created_at = db.Column(db.DateTime, default=utcnow)
+
+    def to_dict(self):
+        return {
+            "id": self.id,
+            "name": self.name,
+            "contactEmail": self.contact_email or "",
+            "phone": self.phone or "",
+            "notes": self.notes or "",
+            "active": self.active is not False,
+            "initials": initials(self.name),
+            "createdAt": ms(self.created_at),
+        }
+
+
 class User(db.Model):
     __tablename__ = "users"
 
@@ -32,7 +56,12 @@ class User(db.Model):
     is_admin = db.Column(db.Boolean, default=False, nullable=False)   # agents: can manage teammates
     active = db.Column(db.Boolean, default=True, nullable=False)      # deactivated users can't sign in
     notif_seen_at = db.Column(db.DateTime)                            # agents: notifications read up to here
+    business_id = db.Column(db.Integer, db.ForeignKey("businesses.id"), index=True)  # customers: their client account
+    must_change_password = db.Column(db.Boolean, default=False, nullable=False)       # set for temporary passwords
+    last_login_at = db.Column(db.DateTime)
     created_at = db.Column(db.DateTime, default=utcnow)
+
+    business = db.relationship("Business", foreign_keys=[business_id], lazy="joined")
 
     def to_dict(self):
         return {
@@ -43,9 +72,11 @@ class User(db.Model):
             "company": self.company,
             "team": self.team,
             "initials": initials(self.name),
-            "teamDomain": team_domain(self.email) if self.role == "customer" else None,
+            "business": ({"id": self.business.id, "name": self.business.name}
+                         if self.role == "customer" and self.business else None),
             "isAdmin": bool(self.is_admin),
             "active": self.active is not False,
+            "mustChangePassword": bool(self.must_change_password),
         }
 
 
@@ -62,6 +93,7 @@ class Ticket(db.Model):
     status = db.Column(db.String(30), nullable=False, default="submitted")
     assigned_team = db.Column(db.String(100))
     assignee_id = db.Column(db.Integer, db.ForeignKey("users.id"), index=True)   # agent who owns it
+    business_id = db.Column(db.Integer, db.ForeignKey("businesses.id"), index=True)  # client account
 
     created_by = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=False, index=True)
     customer_name = db.Column(db.String(255), nullable=False)
@@ -76,6 +108,7 @@ class Ticket(db.Model):
     events = db.relationship("TicketEvent", backref="ticket", cascade="all, delete-orphan",
                              lazy="selectin", order_by="(TicketEvent.created_at, TicketEvent.id)")
     assignee = db.relationship("User", foreign_keys=[assignee_id], lazy="joined")
+    business = db.relationship("Business", foreign_keys=[business_id], lazy="joined")
     attachments = db.relationship("Attachment", backref="ticket", cascade="all, delete-orphan",
                                   lazy="selectin", order_by="Attachment.id")
 
@@ -96,8 +129,9 @@ class Ticket(db.Model):
             "customer": {
                 "name": self.customer_name,
                 "email": self.customer_email,
-                "company": self.customer_company,
+                "company": self.business.name if self.business else self.customer_company,
                 "initials": initials(self.customer_name),
+                "businessId": self.business_id,
             },
             "createdAt": ms(self.created_at),
             "updatedAt": ms(self.updated_at),

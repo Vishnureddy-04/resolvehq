@@ -4,7 +4,7 @@ from datetime import timedelta
 from werkzeug.security import generate_password_hash
 
 from extensions import db
-from models import Ticket, TicketEvent, User, utcnow
+from models import Business, Ticket, TicketEvent, User, utcnow
 
 
 def seed_demo_data():
@@ -13,8 +13,11 @@ def seed_demo_data():
     now = utcnow()
     H, D = timedelta(hours=1), timedelta(days=1)
 
+    acme = Business(name="Acme Inc.", contact_email="ops@acme.com")
+    db.session.add(acme)
+    db.session.flush()
     cust = User(email="customer@acme.com", name="Alex Carter", company="Acme Inc.", role="customer",
-                password_hash=generate_password_hash("demo1234"))
+                business_id=acme.id, password_hash=generate_password_hash("demo1234"))
     agent = User(email="agent@resolvehq.com", name="Jordan Mills", company="ResolveHQ", role="company",
                  team="Support", is_admin=True, password_hash=generate_password_hash("demo1234"))
     db.session.add_all([cust, agent])
@@ -22,7 +25,7 @@ def seed_demo_data():
 
     def mk(title, desc, cat, typ, prio, status, team, created, events):
         t = Ticket(ticket_id="TMP", title=title, description=desc, category=cat, issue_type=typ,
-                   priority=prio, status=status, assigned_team=team, created_by=cust.id,
+                   priority=prio, status=status, assigned_team=team, created_by=cust.id, business_id=acme.id,
                    customer_name=cust.name, customer_email=cust.email, customer_company=cust.company,
                    created_at=created, updated_at=events[-1][1])
         db.session.add(t)
@@ -35,12 +38,12 @@ def seed_demo_data():
 
     mk("Checkout page throws 500 on card payment",
        "Paying with a Visa card on hosted checkout returns a 500 after clicking Pay.",
-       "Product bug", "bug", "P0", "in_progress", "Engineering", now - 2 * D,
+       "Invoice", "bug", "P0", "in_progress", "Engineering", now - 2 * D,
        [("submitted", now - 2 * D, "", "", "customer"),
         ("in_review", now - 2 * D + 3 * H, "Triaged as P0 — payment-blocking", "", "company"),
         ("in_progress", now - D, "Payments squad investigating gateway logs", "", "company")])
     mk("Invoice PDF shows wrong tax total",
        "The downloaded invoice PDF lists a tax amount that does not match the dashboard.",
-       "Billing", "bug", None, "submitted", None, now - 6 * H,
+       "Invoice", "bug", None, "submitted", None, now - 6 * H,
        [("submitted", now - 6 * H, "", "", "customer")])
     db.session.commit()

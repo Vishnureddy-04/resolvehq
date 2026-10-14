@@ -5,7 +5,6 @@ import notify
 import storage
 from extensions import db, limiter
 from models import Attachment, Ticket, TicketEvent, User, utcnow
-from orgs import same_team, team_domain
 
 bp = Blueprint("tickets", __name__, url_prefix="/api/tickets")
 
@@ -31,7 +30,8 @@ def find_ticket_for(user, code, write=False):
     if not t:
         return None
     if user.role == "customer" and t.created_by != user.id:
-        if write or not same_team(user.email, t.customer_email):
+        same_business = user.business_id is not None and t.business_id == user.business_id
+        if write or not same_business:
             return None  # don't reveal other customers' tickets exist
     return t
 
@@ -141,7 +141,8 @@ def create_ticket():
     t = Ticket(ticket_id="PENDING-" + storage.uuid.uuid4().hex[:12], title=title[:200],
                description=desc[:20000], category=category, issue_type=itype, status="submitted",
                created_by=user.id, customer_name=user.name, customer_email=user.email,
-               customer_company=user.company or "—")
+               business_id=user.business_id,
+               customer_company=(user.business.name if user.business else user.company) or "—")
     db.session.add(t)
     db.session.flush()
     t.ticket_id = f"TKT-{1000 + t.id}"
@@ -205,10 +206,8 @@ def list_tickets():
         return err("User not found", 401)
     q = Ticket.query
     if user.role == "customer":
-        domain = team_domain(user.email)
-        if domain:
-            safe = domain.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_")
-            q = q.filter(Ticket.customer_email.like("%@" + safe, escape="\\"))
+        if user.business_id:
+            q = q.filter(Ticket.business_id == user.business_id)   # everyone in the same business account
         else:
             q = q.filter_by(created_by=user.id)
     tickets = q.order_by(Ticket.updated_at.desc()).all()

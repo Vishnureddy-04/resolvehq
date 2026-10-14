@@ -388,6 +388,19 @@
   .acct-id .n{font-weight:600;font-size:14px}
   .acct-id .e{font-size:12.5px;color:var(--muted);margin-top:2px;word-break:break-all}
   .acct-id .c{font-size:12px;color:var(--muted);margin-top:4px}
+  .pw-overlay{position:fixed;inset:0;z-index:200;background:rgba(18,24,38,.45);display:grid;place-items:center;padding:16px}
+  .pw-overlay[hidden]{display:none}
+  .pw-box{background:#fff;border-radius:16px;box-shadow:0 24px 60px -20px rgba(18,24,38,.45);width:100%;max-width:400px;padding:22px 22px 18px}
+  .pw-box h3{margin:0;font-family:"Space Grotesk",sans-serif;font-size:19px}
+  .pw-sub{margin:6px 0 14px;font-size:13px;color:var(--muted);line-height:1.5}
+  .pw-fields{display:grid;gap:12px}
+  .pw-f label{display:block;font-size:12.5px;font-weight:600;color:#3D4658;margin-bottom:6px}
+  .pw-f input{width:100%;box-sizing:border-box;font:inherit;font-size:14px;padding:10px 12px;border:1px solid var(--line-strong,#D5DBE5);border-radius:10px}
+  .pw-f input:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px color-mix(in srgb,var(--accent) 18%,transparent)}
+  .pw-f.bad input{border-color:var(--danger)}
+  .pw-e{font-size:12px;color:var(--danger);margin-top:4px;display:none}
+  .pw-f.bad .pw-e{display:block}
+  .pw-acts{display:flex;justify-content:flex-end;gap:8px;margin-top:18px}
   .acct-item{display:flex;align-items:center;gap:9px;width:100%;padding:11px 16px;background:none;border:0;font:inherit;font-size:13.5px;color:var(--text);cursor:pointer;text-align:left}
   .acct-item:hover{background:#F7F9FC}
   .acct-item svg{width:16px;height:16px;color:var(--muted)}
@@ -513,45 +526,7 @@
         <button type="button" class="submit" id="submitBtn"><span class="spin"></span><span class="txt" id="submitTxt">Sign in</span></button>
       </form>
 
-      <form id="signupForm" novalidate style="display:none">
-        <div class="field" id="suNameField">
-          <label for="su-name">Your name</label>
-          <div class="input">
-            <svg class="lead" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
-            <input id="su-name" type="text" autocomplete="name" placeholder="Full name" maxlength="120" />
-          </div>
-          <div class="err"><span id="suNameErr">Please enter your name.</span></div>
-        </div>
-        <div class="field" id="suCompanyField">
-          <label for="su-company">Company</label>
-          <div class="input">
-            <svg class="lead" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="2" width="16" height="20" rx="2"/><path d="M9 22v-4h6v4M8 6h.01M16 6h.01M12 6h.01M12 10h.01M12 14h.01M16 10h.01M16 14h.01M8 10h.01M8 14h.01"/></svg>
-            <input id="su-company" type="text" autocomplete="organization" placeholder="Your company name" maxlength="120" />
-          </div>
-          <div class="err"><span id="suCompanyErr">Please enter your company name.</span></div>
-        </div>
-        <div class="field" id="suEmailField">
-          <label for="su-email">Work email</label>
-          <div class="input">
-            <svg class="lead" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 7-10 5L2 7"/></svg>
-            <input id="su-email" type="email" autocomplete="email" placeholder="you@company.com" />
-          </div>
-          <div class="err"><span id="suEmailErr">Enter a valid email address.</span></div>
-          <div class="su-hint">Use your work email. Colleagues with the same company email (e.g. @yourcompany.com) will see each other's issues.</div>
-        </div>
-        <div class="field" id="suPassField">
-          <label for="su-password">Password</label>
-          <div class="input">
-            <svg class="lead" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
-            <input id="su-password" type="password" autocomplete="new-password" placeholder="At least 8 characters" />
-          </div>
-          <div class="err"><span id="suPassErr">Use at least 8 characters.</span></div>
-        </div>
-        <button type="button" class="submit" id="suBtn"><span class="spin"></span><span class="txt" id="suTxt">Create account</span></button>
-      </form>
-
-      <div class="alt" id="altSignup">New here? <a href="#" onclick="return authMode('signup')">Create a customer account</a></div>
-      <div class="alt" id="altLogin" style="display:none">Already have an account? <a href="#" onclick="return authMode('login')">Sign in</a></div>
+      <div class="alt" id="altInfo">Need access? Your Finnoto account manager creates logins for your team.</div>
 
       <div class="cross">
         Company team member?
@@ -621,6 +596,7 @@
         <div class="acct-menu" id="acctMenu" hidden>
           <div class="acct-id"><div class="n" id="acctMName"></div><div class="e" id="acctMEmail"></div><div class="c" id="acctMCo"></div></div>
           
+          <button class="acct-item" onclick="closeAcct();openPw(false)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>Change password</button>
           <button class="acct-item out" onclick="signOut()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>Sign out</button>
         </div>
       </div>
@@ -630,6 +606,18 @@
   </div>
 </div>
 
+<div class="pw-overlay" id="pwModal" hidden>
+  <div class="pw-box" role="dialog" aria-modal="true" aria-labelledby="pwTitle">
+    <h3 id="pwTitle">Change password</h3>
+    <p class="pw-sub" id="pwSub"></p>
+    <div class="pw-fields">
+      <div class="pw-f" id="pwCurF"><label for="pwCur">Current password</label><input id="pwCur" type="password" autocomplete="current-password"><div class="pw-e"></div></div>
+      <div class="pw-f" id="pwNewF"><label for="pwNew">New password</label><input id="pwNew" type="password" autocomplete="new-password" placeholder="At least 8 characters"><div class="pw-e"></div></div>
+      <div class="pw-f" id="pwConF"><label for="pwCon">Confirm new password</label><input id="pwCon" type="password" autocomplete="new-password"><div class="pw-e"></div></div>
+    </div>
+    <div class="pw-acts"><button class="btn btn-ghost" id="pwCancel" type="button" onclick="closePw()">Cancel</button><button class="btn btn-primary" id="pwSave" type="button" onclick="savePw()">Save password</button></div>
+  </div>
+</div>
 <div class="toast" id="toast"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg><span id="toastText"></span></div>
 </div>
 
@@ -745,7 +733,7 @@ function raisedBy(t){
 }
 function teamNote(){
   if(!CUSTOMER.team) return '';
-  return `<div class="team-note"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg><span>Shared with your team: everyone signed in with an <b>@${esc(CUSTOMER.team)}</b> email sees these issues, who raised them and their status.</span></div>`;
+  return `<div class="team-note"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg><span>Shared with your colleagues at <b>${esc(CUSTOMER.team)}</b>: everyone with a login for your company sees these issues, who raised them and their status.</span></div>`;
 }
 function badge(status){ const s=STATUS[status]; return `<span class="badge ${s.cls}"><span class="d"></span>${s.label}</span>`; }
 const PLABEL={P0:'Critical',P1:'High',P2:'Medium',P3:'Low'}, PORDER={P0:0,P1:1,P2:2,P3:3};
@@ -1129,17 +1117,50 @@ function fillAcct(name,email,sub,initials){
   $('#acctMName').textContent=name; $('#acctMEmail').textContent=email||''; $('#acctMCo').textContent=sub||'';
 }
 function setUser(u){
-  CUSTOMER={name:u.name, email:u.email||'', company:u.company||'', initials:u.initials||'?', team:u.teamDomain||null};
+  CUSTOMER={name:u.name, email:u.email||'', company:u.company||'', initials:u.initials||'?', team:(u.business&&u.business.name)||null};
   fillAcct(CUSTOMER.name, CUSTOMER.email, CUSTOMER.company, CUSTOMER.initials);
-  $('#navTickets').textContent = CUSTOMER.team ? 'Team tickets' : 'My tickets';
-  TITLES.tickets = CUSTOMER.team ? ['Team tickets','Issues raised by everyone at @'+CUSTOMER.team] : ['My tickets','Every issue you have submitted'];
+  $('#navTickets').textContent = CUSTOMER.team ? 'Company tickets' : 'My tickets';
+  TITLES.tickets = CUSTOMER.team ? ['Company tickets','Issues raised by everyone at '+CUSTOMER.team] : ['My tickets','Every issue you have submitted'];
   $('#whoName').textContent=CUSTOMER.name; $('#whoCo').textContent=CUSTOMER.company; $('#avatar').textContent=CUSTOMER.initials;
 }
 (async function boot(){
   if(!getToken()) return;
-  try{ const u=await api('/auth/me',{noLogout:true}); if(u.role!=='customer') throw 0; setUser(u); showApp(); }
+  try{ const u=await api('/auth/me',{noLogout:true}); if(u.role!=='customer') throw 0; setUser(u); showApp(); if(u.mustChangePassword) openPw(true); }
   catch(e){ setToken(null); }
 })();
+
+
+/* ---- change password (forced after a temporary password) ---- */
+let _pwForced=false, _pwKnown='';
+function openPw(forced, known){
+  _pwForced=!!forced; _pwKnown=known||'';
+  ['pwCur','pwNew','pwCon'].forEach(id=>{ const i=document.getElementById(id); i.value=''; i.parentElement.classList.remove('bad'); });
+  document.getElementById('pwCurF').style.display=_pwKnown?'none':'';
+  document.getElementById('pwTitle').textContent=forced?'Set your own password':'Change password';
+  document.getElementById('pwSub').textContent=forced?'You signed in with a temporary password from Finnoto. Choose a new password to continue.':'Choose a new password for '+CUSTOMER.email+'.';
+  const c=document.getElementById('pwCancel'); c.textContent=forced?'Sign out':'Cancel';
+  document.getElementById('pwModal').hidden=false;
+  setTimeout(()=>document.getElementById(_pwKnown?'pwNew':'pwCur').focus(),30);
+}
+function closePw(){ if(_pwForced){ document.getElementById('pwModal').hidden=true; signOut(); return; } document.getElementById('pwModal').hidden=true; }
+function pwBad(id,msg){ const f=document.getElementById(id); f.classList.toggle('bad',!!msg); if(msg) f.querySelector('.pw-e').textContent=msg; return !!msg; }
+async function savePw(){
+  const cur=_pwKnown||document.getElementById('pwCur').value, nw=document.getElementById('pwNew').value, con=document.getElementById('pwCon').value;
+  let bad=false;
+  bad=pwBad('pwCurF',!_pwKnown&&!cur?'Enter your current password.':'')||bad;
+  bad=pwBad('pwNewF',nw.length<8?'Use at least 8 characters.':(nw===cur?'Choose a password different from the current one.':''))||bad;
+  bad=pwBad('pwConF',!bad&&nw!==con?"Passwords don't match.":'')||bad;
+  if(bad) return;
+  const b=document.getElementById('pwSave'); b.disabled=true; b.textContent='Saving…';
+  try{
+    await api('/auth/password',{method:'POST',body:{current:cur,new:nw},noLogout:true});
+    _pwForced=false; _pwKnown=''; document.getElementById('pwModal').hidden=true; toast('Password updated');
+  }catch(e){
+    if(e.fields&&e.fields.current){ _pwKnown=''; document.getElementById('pwCurF').style.display=''; pwBad('pwCurF',e.message); }
+    else pwBad('pwNewF',e.message);
+  }finally{ b.disabled=false; b.textContent='Save password'; }
+}
+document.addEventListener('keydown',e=>{ if(e.key==='Enter' && !document.getElementById('pwModal').hidden && e.target.closest('.pw-box') && e.target.tagName==='INPUT'){ e.preventDefault(); savePw(); } });
 
 /* ---- screen switching (merged single-file) ---- */
 function showApp(){
@@ -1151,7 +1172,7 @@ function showApp(){
   if(_custPoll) clearInterval(_custPoll);
   _custPoll=setInterval(()=>{ if(document.visibilityState==='visible') refresh(true); }, 30000);
 }
-function signOut(){ if(_custPoll){ clearInterval(_custPoll); _custPoll=null; } closeAcct(); setToken(null); tickets=[]; loadState='idle'; showLogin('You have been signed out.'); }
+function signOut(){ const pm=document.getElementById('pwModal'); if(pm) pm.hidden=true; if(_custPoll){ clearInterval(_custPoll); _custPoll=null; } closeAcct(); setToken(null); tickets=[]; loadState='idle'; showLogin('You have been signed out.'); }
 function showLogin(msg){
   if(_clockTimer){ clearInterval(_clockTimer); _clockTimer=null; }
   state.current=null;
@@ -1170,7 +1191,7 @@ function showLogin(msg){
 </script>
 <script>
 
-/* Customer login + sign-up — talks to /api/auth */
+/* Customer login — accounts are created by the Finnoto team (company console → Clients) */
 
 function togglePw(){
   const inp=document.getElementById('password'),btn=document.getElementById('peek'),show=inp.type==='password';
@@ -1181,24 +1202,15 @@ function togglePw(){
     :'<path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/>';
 }
 function setInvalid(id,on){document.getElementById(id).classList.toggle('invalid',on)}
-function clearErrors(){['emailField','passField','suNameField','suCompanyField','suEmailField','suPassField'].forEach(f=>setInvalid(f,false))}
+function clearErrors(){['emailField','passField'].forEach(f=>setInvalid(f,false))}
 function validEmail(v){return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v)}
 function showBanner(m){document.getElementById('bannerText').textContent=m;document.getElementById('banner').classList.add('show')}
 function hideBanner(){document.getElementById('banner').classList.remove('show')}
 function notice(kind){
-  const t={reset:'To reset your password, please contact your account manager at our support team.'};
+  const t={reset:'Forgot your password? Ask your Finnoto account manager to reset it — you will get a new temporary password.'};
   showBanner(t[kind]||''); return false;
 }
-function authMode(m){
-  const su=m==='signup';
-  document.getElementById('loginForm').style.display=su?'none':'';
-  document.getElementById('signupForm').style.display=su?'':'none';
-  document.getElementById('altSignup').style.display=su?'none':'';
-  document.getElementById('altLogin').style.display=su?'':'none';
-  document.getElementById('authTitle').textContent=su?'Create your account':'Welcome back';
-  document.getElementById('authSub').textContent=su?'Sign up to report issues and follow their progress.':'Sign in to track your tickets and raise new issues.';
-  hideBanner(); clearErrors(); return false;
-}
+function authMode(){ hideBanner(); clearErrors(); return false; }
 function busy(btnId, txtId, on, label){
   const b=document.getElementById(btnId); b.classList.toggle('loading',on); b.disabled=on;
   document.getElementById(txtId).textContent=label;
@@ -1215,46 +1227,15 @@ window['_h_loginForm']=async e=>{
   try{
     const r=await api('/auth/login',{method:'POST',body:{email,password,role:'customer'},noLogout:true});
     setToken(r.access_token, document.getElementById('remember').checked);
-    setUser(r.user); busy('submitBtn','submitTxt',false,'Sign in'); showApp();
+    setUser(r.user); busy('submitBtn','submitTxt',false,'Sign in'); showApp(); if(r.user.mustChangePassword) openPw(true, password);
   }catch(err){
     busy('submitBtn','submitTxt',false,'Sign in');
     if(err.status===401){ document.getElementById('emailErr').textContent=err.message; setInvalid('emailField',true); setInvalid('passField',true); }
     else showBanner(err.message);
   }
 };
-window['_h_signupForm']=async e=>{
-  e.preventDefault(); hideBanner(); clearErrors();
-  const v=id=>document.getElementById(id).value.trim();
-  const body={name:v('su-name'), company:v('su-company'), email:v('su-email'), password:document.getElementById('su-password').value};
-  const fieldMap={name:['suNameField','suNameErr'],company:['suCompanyField','suCompanyErr'],email:['suEmailField','suEmailErr'],password:['suPassField','suPassErr']};
-  const errs={};
-  if(!body.name) errs.name='Please enter your name.';
-  if(!body.company) errs.company='Please enter your company name.';
-  if(!validEmail(body.email)) errs.email='Enter a valid email address.';
-  if(body.password.length<8) errs.password='Use at least 8 characters.';
-  const show=fs=>Object.entries(fs).forEach(([k,m])=>{ if(fieldMap[k]){ document.getElementById(fieldMap[k][1]).textContent=m; setInvalid(fieldMap[k][0],true);} });
-  if(Object.keys(errs).length){ show(errs); return; }
-  busy('suBtn','suTxt',true,'Creating account…');
-  try{
-    const r=await api('/auth/register',{method:'POST',body,noLogout:true});
-    setToken(r.access_token, true); setUser(r.user);
-    busy('suBtn','suTxt',false,'Create account');
-    document.getElementById('signupForm').reset(); showApp(); toast('Welcome, '+r.user.name.split(' ')[0]+'!');
-  }catch(err){
-    busy('suBtn','suTxt',false,'Create account');
-    if(err.fields) show(err.fields);
-    showBanner(err.message);
-  }
-};
-
-
 /* bind auth forms without relying on native form submit (blocked in sandboxed frames) */
 (function(){const f=document.getElementById('loginForm'),b=document.getElementById('submitBtn'),h=window['_h_loginForm'];
-  b.addEventListener('click',h);
-  f.addEventListener('submit',e=>{e.preventDefault();h(e);});
-  f.addEventListener('keydown',e=>{if(e.key==='Enter'&&e.target.tagName==='INPUT'){e.preventDefault();if(!b.disabled)h(e);}});
-})();
-(function(){const f=document.getElementById('signupForm'),b=document.getElementById('suBtn'),h=window['_h_signupForm'];
   b.addEventListener('click',h);
   f.addEventListener('submit',e=>{e.preventDefault();h(e);});
   f.addEventListener('keydown',e=>{if(e.key==='Enter'&&e.target.tagName==='INPUT'){e.preventDefault();if(!b.disabled)h(e);}});

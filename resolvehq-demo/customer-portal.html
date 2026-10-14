@@ -13,7 +13,7 @@
    in the company console opened in the same browser. "Reset demo" restores the sample data. */
 (function(){
   const API='https://preview.resolvehq/api'; window.RESOLVEHQ_API=API;
-  const KEY='rhq_demo_db_v2', H=3600e3, D=24*H;
+  const KEY='rhq_demo_db_v4'; window.__RHQ_PREVIEW=true, H=3600e3, D=24*H;
   const PUBLIC=new Set(['gmail.com','yahoo.com','outlook.com','hotmail.com','icloud.com','live.com','aol.com','proton.me','protonmail.com','rediffmail.com','yahoo.co.in','zoho.com']);
   const ini=n=>(n||'').split(/\s+/).filter(Boolean).slice(0,2).map(w=>w[0]).join('').toUpperCase()||'?';
   const dom=e=>{const d=(e||'').split('@')[1]; return d&&!PUBLIC.has(d)?d:null;};
@@ -27,9 +27,11 @@
       {id:1,email:'admin@finnoto.com',password:'demo1234',name:'Vishnu Reddy',role:'company',team:'Support',isAdmin:true,active:true,createdAt:now-30*D},
       {id:2,email:'kiran@finnoto.com',password:'demo1234',name:'Kiran Dev',role:'company',team:'Engineering',isAdmin:false,active:true,createdAt:now-30*D},
       {id:3,email:'meera@finnoto.com',password:'demo1234',name:'Meera Nair',role:'company',team:'Billing',isAdmin:false,active:true,createdAt:now-30*D},
-      {id:10,email:'demo@client.com',password:'demo1234',name:'Ravi Kumar',company:'Client Co',role:'customer',active:true,createdAt:now-20*D},
-      {id:11,email:'priya@client.com',password:'demo1234',name:'Priya Shah',company:'Client Co',role:'customer',active:true,createdAt:now-20*D},
-      {id:12,email:'tom@globex.com',password:'demo1234',name:'Tom Reyes',company:'Globex',role:'customer',active:true,createdAt:now-20*D},
+      {id:10,email:'demo@client.com',password:'demo1234',name:'Ravi Kumar',company:'Client Co',businessId:1,role:'customer',active:true,createdAt:now-20*D,lastLoginAt:now-2*H},
+      {id:11,email:'priya@client.com',password:'demo1234',name:'Priya Shah',company:'Client Co',businessId:1,role:'customer',active:true,createdAt:now-20*D,lastLoginAt:now-5*H},
+      {id:13,email:'gee.traders@gmail.com',password:'demo1234',name:'Gee Kumar',company:'Gee Traders',businessId:2,role:'customer',active:true,createdAt:now-10*D,lastLoginAt:now-1*H},
+      {id:14,email:'accounts@geetraders.in',password:'Welcome2026',name:'Lakshmi Rao',company:'Gee Traders',businessId:2,role:'customer',active:true,mustChangePassword:true,createdAt:now-1*D},
+      {id:12,email:'tom@globex.com',password:'demo1234',name:'Tom Reyes',company:'Globex',businessId:3,role:'customer',active:true,createdAt:now-20*D,lastLoginAt:now-1*D},
     ];
     const T=(id,owner,title,desc,cat,type,prio,status,team,assignee,created,events)=>({id:'TKT-'+id,ownerId:owner,title,desc,category:cat,type,priority:prio,status,team,assigneeId:assignee,createdAt:created,updatedAt:events[events.length-1].at,resolvedAt:null,closedAt:null,attachments:[],events});
     const tickets=[
@@ -37,10 +39,17 @@
         [E('submitted',now-26*H,'Issue submitted — our team will review shortly','','customer','Ravi Kumar'),E('in_review',now-20*H,'Triaged & prioritized','','company','Vishnu Reddy'),E('note',now-20*H,'Set to P2','Priority','company','Vishnu Reddy'),E('note',now-20*H,'Routed to Billing','Assigned','company','Vishnu Reddy'),E('in_progress',now-20*H,'Billing is now working on it','','company','Vishnu Reddy'),E('note',now-19*H,'Assigned to Meera Nair','Assignee','company','Vishnu Reddy')]),
       T(1002,11,'GRN not linking to purchase order','After posting a GRN, it does not show against the PO.','GRN','enhancement',null,'submitted','',null,now-5*H,
         [E('submitted',now-5*H,'Issue submitted — our team will review shortly','','customer','Priya Shah')]),
+      T(1004,13,'E-invoice IRN missing on PDF','IRN number does not print on the invoice PDF.','E-invoice','bug','P0','submitted','',null,now-40*60e3,
+        [E('submitted',now-40*60e3,'Issue submitted — our team will review shortly','','customer','Gee Kumar')]),
       T(1003,12,'Credit note not reducing outstanding','Credit note posted but vendor balance unchanged.','Credit note','bug','P1','awaiting_customer','Engineering',2,now-3*D,
         [E('submitted',now-3*D,'Issue submitted — our team will review shortly','','customer','Tom Reyes'),E('in_review',now-3*D+4*H,'Triaged & prioritized','','company','Vishnu Reddy'),E('awaiting_customer',now-6*H,'','','company','Kiran Dev'),E('note',now-6*H,'Which credit note number is it?','Asked customer','company','Kiran Dev'),E('note',now-90*60e3,'CN-118 for vendor Apex Traders','Customer reply','customer','Tom Reyes')]),
     ];
-    return {users,tickets,seq:1003,evSeq:ev,seen:{1:now-3*H,2:now-3*H,3:now-3*H}};
+    const businesses=[
+      {id:1,name:'Client Co',contactEmail:'it@client.com',phone:'+91 80 4000 1200',notes:'Gold plan',active:true,createdAt:now-25*D},
+      {id:2,name:'Gee Traders',contactEmail:'accounts@geetraders.in',phone:'',notes:'',active:true,createdAt:now-12*D},
+      {id:3,name:'Globex',contactEmail:'',phone:'',notes:'',active:true,createdAt:now-22*D}];
+    tickets.forEach(t=>{ t.businessId=users.find(x=>x.id===t.ownerId).businessId; });
+    return {users,tickets,businesses,bizSeq:3,seq:1004,evSeq:ev,seen:{1:now-3*H,2:now-3*H,3:now-3*H}};
   }
   let mem=null;
   // Side-by-side test page: both portals run in frames of one page and share the parent's store directly.
@@ -63,13 +72,15 @@
     } };
 
   const res=(code,body)=>new Response(JSON.stringify(body),{status:code,headers:{'Content-Type':'application/json'}});
-  const pub=u=>({id:u.id,email:u.email,name:u.name,role:u.role,company:u.company||null,team:u.team||null,isAdmin:!!u.isAdmin,active:u.active!==false,initials:ini(u.name),teamDomain:u.role==='customer'?dom(u.email):null});
+  const bizOf=(db,id)=>(db.businesses||[]).find(b=>b.id===id);
+  let DB_=null;
+  const pub=u=>{ const b=u.role==='customer'&&DB_&&bizOf(DB_,u.businessId); return {id:u.id,email:u.email,name:u.name,role:u.role,company:b?b.name:(u.company||null),team:u.team||null,isAdmin:!!u.isAdmin,active:u.active!==false,initials:ini(u.name),business:b?{id:b.id,name:b.name}:null,mustChangePassword:!!u.mustChangePassword}; };
   function out(db,t,viewer){
     const owner=db.users.find(u=>u.id===t.ownerId)||{name:'?',email:'',company:''};
     const a=db.users.find(u=>u.id===t.assigneeId);
     const c={id:t.id,title:t.title,desc:t.desc,category:t.category,type:t.type,priority:t.priority,status:t.status,team:t.team||'',
       assignee:a?{id:a.id,name:a.name,initials:ini(a.name)}:null,
-      customer:{name:owner.name,email:owner.email,company:owner.company,initials:ini(owner.name)},
+      customer:{name:owner.name,email:owner.email,company:(bizOf(db,t.businessId)||{}).name||owner.company,initials:ini(owner.name),businessId:t.businessId||null},
       createdAt:t.createdAt,updatedAt:t.updatedAt,resolvedAt:t.resolvedAt,closedAt:t.closedAt,
       events:t.events.slice(),attachmentCount:t.attachments.length,attachments:t.attachments.slice()};
     if(viewer&&viewer.role==='customer'){
@@ -78,7 +89,7 @@
     }
     return c;
   }
-  const visibleTo=(db,u,t)=>{ if(u.role==='company') return true; if(t.ownerId===u.id) return true; const o=db.users.find(x=>x.id===t.ownerId); return !!(dom(u.email)&&o&&dom(o.email)===dom(u.email)); };
+  const visibleTo=(db,u,t)=>u.role==='company'||t.ownerId===u.id||(!!u.businessId&&t.businessId===u.businessId);
   function log(db,t,stage,u,label,note){ t.events.push({id:++db.evSeq,stage,at:Date.now(),note:note||'',label:label||'',by:u?u.role:'system',author:u?u.name:''}); }
   function setStatus(db,t,s,u){ if(s===t.status) return; t.status=s; const T=Date.now(); if(s==='resolved'&&!t.resolvedAt)t.resolvedAt=T; if(s==='closed'){t.closedAt=T; if(!t.resolvedAt)t.resolvedAt=T;} if(!['resolved','closed'].includes(s))t.closedAt=null; log(db,t,s,u); }
   // shrink screenshots so the shared demo store stays small
@@ -100,20 +111,59 @@
     const u=mt&&db.users.find(x=>x.id===+mt[1]&&x.active!==false);
     const T=Date.now();
 
-    if(path==='/auth/register'){ const e=(body.email||'').toLowerCase();
-      if(db.users.some(x=>x.email===e)) return res(409,{error:'An account with this email already exists. Try signing in.',fields:{email:'Already registered.'}});
-      const n={id:Math.max(...db.users.map(x=>x.id))+1,email:e,password:body.password,name:body.name,company:body.company,role:'customer',active:true,createdAt:T};
-      db.users.push(n); save(db); return res(201,{access_token:'mock.'+n.id,user:pub(n)}); }
-    if(path==='/auth/login'){ const x=db.users.find(v=>v.email===(body.email||'').toLowerCase()&&v.password===body.password);
+    DB_=db;
+    if(path==='/auth/register') return res(403,{error:'Accounts are created by our team. Please contact your account manager for access.'});
+    if(path==='/auth/login'){ const x=db.users.find(v=>v.email===(body.email||'').trim().toLowerCase()&&v.password===body.password);
       if(!x) return res(401,{error:'Email or password is incorrect.'});
       if(x.active===false) return res(403,{error:'This account has been deactivated. Contact your admin.'});
+      if(x.role==='customer'){ const b=bizOf(db,x.businessId); if(!b||!b.active) return res(403,{error:"Your company's access is paused. Please contact your account manager."}); }
       if(body.role&&body.role!==x.role) return res(403,{error:'This account belongs to the '+(x.role==='company'?'company console':'customer portal')+'.'});
-      return res(200,{access_token:'mock.'+x.id,user:pub(x)}); }
-    if(!u) return res(401,{error:'Please sign in.'});
+      x.lastLoginAt=T; save(db); return res(200,{access_token:'mock.'+x.id,user:pub(x)}); }
+    if(!u || (u.role==='customer' && !(bizOf(db,u.businessId)||{}).active)) return res(401,{error:'Please sign in.'});
     if(path==='/auth/me') return res(200,pub(u));
-    if(path==='/auth/password'){ if(body.current!==u.password) return res(400,{error:'Your current password is incorrect.'}); if((body.new||'').length<8) return res(400,{error:'Use at least 8 characters.'}); u.password=body.new; save(db); return res(200,{message:'ok'}); }
+    if(path==='/auth/password'){ if(body.current!==u.password) return res(400,{error:'Your current password is incorrect.',fields:{current:'Incorrect.'}}); if((body.new||'').length<8) return res(400,{error:'Use at least 8 characters.',fields:{new:'Too short.'}});
+      if(body.new===body.current) return res(400,{error:"Choose a new password that's different from the temporary one.",fields:{new:'Same as before.'}});
+      u.password=body.new; u.mustChangePassword=false; save(db); return res(200,{message:'ok'}); }
 
     // ----- company-only
+    if(path.startsWith('/push')) return res(400,{error:'Device alerts work on the live site (resolvehq.vercel.app), not in this preview.'});
+    if(path.startsWith('/businesses')){
+      if(u.role!=='company') return res(403,{error:'Company access only.'});
+      const EM=/^[^\s@]+@[^\s@]+\.[^\s@]+$/; const temp=()=>{ const A='ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnpqrstuvwxyz23456789'; let x=''; for(let i=0;i<10;i++) x+=A[Math.floor(Math.random()*A.length)]; return x; };
+      const stats=b=>{ const s={open:0,urgent:0,total:0,lastAt:null}; db.tickets.filter(t=>t.businessId===b.id).forEach(t=>{ s.total++; if(OPEN.includes(t.status)){ s.open++; if(['P0','P1'].includes(t.priority)) s.urgent++; } s.lastAt=Math.max(s.lastAt||0,t.updatedAt); }); return s; };
+      const ppl=b=>db.users.filter(x=>x.role==='customer'&&x.businessId===b.id);
+      const bout=b=>Object.assign({id:b.id,name:b.name,contactEmail:b.contactEmail||'',phone:b.phone||'',notes:b.notes||'',active:b.active!==false,initials:ini(b.name),createdAt:b.createdAt},stats(b),{users:ppl(b).length});
+      const uout=x=>({id:x.id,name:x.name,email:x.email,active:x.active!==false,mustChangePassword:!!x.mustChangePassword,lastLoginAt:x.lastLoginAt||null,createdAt:x.createdAt});
+      const detail=b=>Object.assign(bout(b),{people:ppl(b).sort((a,c)=>(c.active!==false)-(a.active!==false)||a.name.localeCompare(c.name)).map(uout)});
+      const taken=(n,ex)=>db.businesses.some(b=>b.id!==ex&&b.name.toLowerCase()===n.toLowerCase());
+      const bm=path.match(/^\/businesses(?:\/(\d+))?(?:\/users(?:\/(\d+))?)?$/); const isUsers=/\/users/.test(path);
+      if(!bm) return res(404,{error:'Not found'});
+      if(!bm[1]){
+        if(m==='GET') return res(200,db.businesses.map(bout).sort((a,b)=>(!a.active)-(!b.active)||b.open-a.open||(b.lastAt||0)-(a.lastAt||0)||a.name.localeCompare(b.name)));
+        const n=(body.name||'').trim(), ce=(body.contactEmail||'').trim().toLowerCase();
+        if(!n) return res(400,{error:'Enter the business name.',fields:{name:'Required.'}});
+        if(ce&&!EM.test(ce)) return res(400,{error:'Enter a valid contact email.'});
+        if(taken(n)) return res(409,{error:'A business called “'+n+'” already exists.'});
+        const b={id:++db.bizSeq,name:n,contactEmail:ce,phone:(body.phone||'').trim(),notes:(body.notes||'').trim(),active:true,createdAt:T}; db.businesses.push(b); save(db); return res(201,bout(b)); }
+      const b=bizOf(db,+bm[1]); if(!b) return res(404,{error:'Business not found.'});
+      if(!isUsers){
+        if(m==='GET') return res(200,detail(b));
+        if('name' in body){ const n=(body.name||'').trim(); if(!n) return res(400,{error:'Enter the business name.'}); if(taken(n,b.id)) return res(409,{error:'A business called “'+n+'” already exists.'}); b.name=n; ppl(b).forEach(x=>x.company=n); }
+        if('contactEmail' in body){ const ce=(body.contactEmail||'').trim().toLowerCase(); if(ce&&!EM.test(ce)) return res(400,{error:'Enter a valid contact email.'}); b.contactEmail=ce; }
+        if('phone' in body) b.phone=(body.phone||'').trim(); if('notes' in body) b.notes=(body.notes||'').trim();
+        if('active' in body){ if(!u.isAdmin) return res(403,{error:'Only admins can pause or restore a business.'}); b.active=!!body.active; }
+        save(db); return res(200,detail(b)); }
+      if(!bm[2]&&m==='POST'){
+        const n=(body.name||'').trim(), e=(body.email||'').trim().toLowerCase();
+        if(!n||!EM.test(e)) return res(400,{error:'Please fix the highlighted fields.'});
+        const ex=db.users.find(x=>x.email===e);
+        if(ex) return res(409,{error:'This email is already used by '+(ex.role==='company'?'a Finnoto teammate':'the business “'+((bizOf(db,ex.businessId)||{}).name||'another account')+'”')+'.'});
+        const pw=temp(); const x={id:Math.max(...db.users.map(v=>v.id))+1,email:e,password:pw,name:n,company:b.name,businessId:b.id,role:'customer',active:true,mustChangePassword:true,createdAt:T};
+        db.users.push(x); save(db); return res(201,Object.assign(uout(x),{tempPassword:pw})); }
+      const x=db.users.find(v=>v.id===+bm[2]&&v.role==='customer'&&v.businessId===b.id); if(!x) return res(404,{error:'User not found in this business.'});
+      const extra={}; if('active' in body) x.active=!!body.active; if(body.resetPassword){ x.password=temp(); x.mustChangePassword=true; extra.tempPassword=x.password; }
+      save(db); return res(200,Object.assign(uout(x),extra));
+    }
     if(path.startsWith('/agents')||path.startsWith('/notifications')){
       if(u.role!=='company') return res(403,{error:'Company access only.'});
       const agentOut=a=>Object.assign(pub(a),{openAssigned:db.tickets.filter(t=>t.assigneeId===a.id&&OPEN.includes(t.status)).length});
@@ -145,7 +195,7 @@
       const fields={}; if(!f.get('title')) fields.title='Please add a title.'; if(!f.get('description')) fields.description='Please describe the issue.';
       if(!['bug','enhancement'].includes(type)) fields.type='Choose Urgent fix or Feature change.'; if(!cat) fields.category='Please choose a category.';
       if(Object.keys(fields).length) return res(400,{error:'Please fill in the required fields.',fields});
-      const t={id:'TKT-'+(++db.seq),ownerId:u.id,title:f.get('title'),desc:f.get('description'),category:cat,type,priority:type==='bug'?'P0':null,status:'submitted',team:'',assigneeId:null,createdAt:T,updatedAt:T,resolvedAt:null,closedAt:null,attachments:[],events:[]};
+      const t={id:'TKT-'+(++db.seq),ownerId:u.id,businessId:u.businessId||null,title:f.get('title'),desc:f.get('description'),category:cat,type,priority:type==='bug'?'P0':null,status:'submitted',team:'',assigneeId:null,createdAt:T,updatedAt:T,resolvedAt:null,closedAt:null,attachments:[],events:[]};
       log(db,t,'submitted',u,'','Issue submitted — our team will review shortly');
       if(type==='bug') log(db,t,'note',u,'Priority','Set to P0 — customer marked this as an urgent fix');
       const er=await addImages(db,t,f.getAll('files'),u); if(er) return res(400,{error:er});
@@ -578,6 +628,19 @@
   .acct-id .n{font-weight:600;font-size:14px}
   .acct-id .e{font-size:12.5px;color:var(--muted);margin-top:2px;word-break:break-all}
   .acct-id .c{font-size:12px;color:var(--muted);margin-top:4px}
+  .pw-overlay{position:fixed;inset:0;z-index:200;background:rgba(18,24,38,.45);display:grid;place-items:center;padding:16px}
+  .pw-overlay[hidden]{display:none}
+  .pw-box{background:#fff;border-radius:16px;box-shadow:0 24px 60px -20px rgba(18,24,38,.45);width:100%;max-width:400px;padding:22px 22px 18px}
+  .pw-box h3{margin:0;font-family:"Space Grotesk",sans-serif;font-size:19px}
+  .pw-sub{margin:6px 0 14px;font-size:13px;color:var(--muted);line-height:1.5}
+  .pw-fields{display:grid;gap:12px}
+  .pw-f label{display:block;font-size:12.5px;font-weight:600;color:#3D4658;margin-bottom:6px}
+  .pw-f input{width:100%;box-sizing:border-box;font:inherit;font-size:14px;padding:10px 12px;border:1px solid var(--line-strong,#D5DBE5);border-radius:10px}
+  .pw-f input:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px color-mix(in srgb,var(--accent) 18%,transparent)}
+  .pw-f.bad input{border-color:var(--danger)}
+  .pw-e{font-size:12px;color:var(--danger);margin-top:4px;display:none}
+  .pw-f.bad .pw-e{display:block}
+  .pw-acts{display:flex;justify-content:flex-end;gap:8px;margin-top:18px}
   .acct-item{display:flex;align-items:center;gap:9px;width:100%;padding:11px 16px;background:none;border:0;font:inherit;font-size:13.5px;color:var(--text);cursor:pointer;text-align:left}
   .acct-item:hover{background:#F7F9FC}
   .acct-item svg{width:16px;height:16px;color:var(--muted)}
@@ -703,45 +766,7 @@
         <button type="button" class="submit" id="submitBtn"><span class="spin"></span><span class="txt" id="submitTxt">Sign in</span></button>
       </form>
 
-      <form id="signupForm" novalidate style="display:none">
-        <div class="field" id="suNameField">
-          <label for="su-name">Your name</label>
-          <div class="input">
-            <svg class="lead" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
-            <input id="su-name" type="text" autocomplete="name" placeholder="Full name" maxlength="120" />
-          </div>
-          <div class="err"><span id="suNameErr">Please enter your name.</span></div>
-        </div>
-        <div class="field" id="suCompanyField">
-          <label for="su-company">Company</label>
-          <div class="input">
-            <svg class="lead" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="2" width="16" height="20" rx="2"/><path d="M9 22v-4h6v4M8 6h.01M16 6h.01M12 6h.01M12 10h.01M12 14h.01M16 10h.01M16 14h.01M8 10h.01M8 14h.01"/></svg>
-            <input id="su-company" type="text" autocomplete="organization" placeholder="Your company name" maxlength="120" />
-          </div>
-          <div class="err"><span id="suCompanyErr">Please enter your company name.</span></div>
-        </div>
-        <div class="field" id="suEmailField">
-          <label for="su-email">Work email</label>
-          <div class="input">
-            <svg class="lead" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 7-10 5L2 7"/></svg>
-            <input id="su-email" type="email" autocomplete="email" placeholder="you@company.com" />
-          </div>
-          <div class="err"><span id="suEmailErr">Enter a valid email address.</span></div>
-          <div class="su-hint">Use your work email. Colleagues with the same company email (e.g. @yourcompany.com) will see each other's issues.</div>
-        </div>
-        <div class="field" id="suPassField">
-          <label for="su-password">Password</label>
-          <div class="input">
-            <svg class="lead" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
-            <input id="su-password" type="password" autocomplete="new-password" placeholder="At least 8 characters" />
-          </div>
-          <div class="err"><span id="suPassErr">Use at least 8 characters.</span></div>
-        </div>
-        <button type="button" class="submit" id="suBtn"><span class="spin"></span><span class="txt" id="suTxt">Create account</span></button>
-      </form>
-
-      <div class="alt" id="altSignup">New here? <a href="#" onclick="return authMode('signup')">Create a customer account</a></div>
-      <div class="alt" id="altLogin" style="display:none">Already have an account? <a href="#" onclick="return authMode('login')">Sign in</a></div>
+      <div class="alt" id="altInfo">Need access? Your Finnoto account manager creates logins for your team.</div>
 
       <div class="cross">
         Company team member?
@@ -811,6 +836,7 @@
         <div class="acct-menu" id="acctMenu" hidden>
           <div class="acct-id"><div class="n" id="acctMName"></div><div class="e" id="acctMEmail"></div><div class="c" id="acctMCo"></div></div>
           
+          <button class="acct-item" onclick="closeAcct();openPw(false)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>Change password</button>
           <button class="acct-item out" onclick="signOut()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>Sign out</button>
         </div>
       </div>
@@ -820,6 +846,18 @@
   </div>
 </div>
 
+<div class="pw-overlay" id="pwModal" hidden>
+  <div class="pw-box" role="dialog" aria-modal="true" aria-labelledby="pwTitle">
+    <h3 id="pwTitle">Change password</h3>
+    <p class="pw-sub" id="pwSub"></p>
+    <div class="pw-fields">
+      <div class="pw-f" id="pwCurF"><label for="pwCur">Current password</label><input id="pwCur" type="password" autocomplete="current-password"><div class="pw-e"></div></div>
+      <div class="pw-f" id="pwNewF"><label for="pwNew">New password</label><input id="pwNew" type="password" autocomplete="new-password" placeholder="At least 8 characters"><div class="pw-e"></div></div>
+      <div class="pw-f" id="pwConF"><label for="pwCon">Confirm new password</label><input id="pwCon" type="password" autocomplete="new-password"><div class="pw-e"></div></div>
+    </div>
+    <div class="pw-acts"><button class="btn btn-ghost" id="pwCancel" type="button" onclick="closePw()">Cancel</button><button class="btn btn-primary" id="pwSave" type="button" onclick="savePw()">Save password</button></div>
+  </div>
+</div>
 <div class="toast" id="toast"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg><span id="toastText"></span></div>
 </div>
 
@@ -935,7 +973,7 @@ function raisedBy(t){
 }
 function teamNote(){
   if(!CUSTOMER.team) return '';
-  return `<div class="team-note"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg><span>Shared with your team: everyone signed in with an <b>@${esc(CUSTOMER.team)}</b> email sees these issues, who raised them and their status.</span></div>`;
+  return `<div class="team-note"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg><span>Shared with your colleagues at <b>${esc(CUSTOMER.team)}</b>: everyone with a login for your company sees these issues, who raised them and their status.</span></div>`;
 }
 function badge(status){ const s=STATUS[status]; return `<span class="badge ${s.cls}"><span class="d"></span>${s.label}</span>`; }
 const PLABEL={P0:'Critical',P1:'High',P2:'Medium',P3:'Low'}, PORDER={P0:0,P1:1,P2:2,P3:3};
@@ -1319,17 +1357,50 @@ function fillAcct(name,email,sub,initials){
   $('#acctMName').textContent=name; $('#acctMEmail').textContent=email||''; $('#acctMCo').textContent=sub||'';
 }
 function setUser(u){
-  CUSTOMER={name:u.name, email:u.email||'', company:u.company||'', initials:u.initials||'?', team:u.teamDomain||null};
+  CUSTOMER={name:u.name, email:u.email||'', company:u.company||'', initials:u.initials||'?', team:(u.business&&u.business.name)||null};
   fillAcct(CUSTOMER.name, CUSTOMER.email, CUSTOMER.company, CUSTOMER.initials);
-  $('#navTickets').textContent = CUSTOMER.team ? 'Team tickets' : 'My tickets';
-  TITLES.tickets = CUSTOMER.team ? ['Team tickets','Issues raised by everyone at @'+CUSTOMER.team] : ['My tickets','Every issue you have submitted'];
+  $('#navTickets').textContent = CUSTOMER.team ? 'Company tickets' : 'My tickets';
+  TITLES.tickets = CUSTOMER.team ? ['Company tickets','Issues raised by everyone at '+CUSTOMER.team] : ['My tickets','Every issue you have submitted'];
   $('#whoName').textContent=CUSTOMER.name; $('#whoCo').textContent=CUSTOMER.company; $('#avatar').textContent=CUSTOMER.initials;
 }
 (async function boot(){
   if(!getToken()) return;
-  try{ const u=await api('/auth/me',{noLogout:true}); if(u.role!=='customer') throw 0; setUser(u); showApp(); }
+  try{ const u=await api('/auth/me',{noLogout:true}); if(u.role!=='customer') throw 0; setUser(u); showApp(); if(u.mustChangePassword) openPw(true); }
   catch(e){ setToken(null); }
 })();
+
+
+/* ---- change password (forced after a temporary password) ---- */
+let _pwForced=false, _pwKnown='';
+function openPw(forced, known){
+  _pwForced=!!forced; _pwKnown=known||'';
+  ['pwCur','pwNew','pwCon'].forEach(id=>{ const i=document.getElementById(id); i.value=''; i.parentElement.classList.remove('bad'); });
+  document.getElementById('pwCurF').style.display=_pwKnown?'none':'';
+  document.getElementById('pwTitle').textContent=forced?'Set your own password':'Change password';
+  document.getElementById('pwSub').textContent=forced?'You signed in with a temporary password from Finnoto. Choose a new password to continue.':'Choose a new password for '+CUSTOMER.email+'.';
+  const c=document.getElementById('pwCancel'); c.textContent=forced?'Sign out':'Cancel';
+  document.getElementById('pwModal').hidden=false;
+  setTimeout(()=>document.getElementById(_pwKnown?'pwNew':'pwCur').focus(),30);
+}
+function closePw(){ if(_pwForced){ document.getElementById('pwModal').hidden=true; signOut(); return; } document.getElementById('pwModal').hidden=true; }
+function pwBad(id,msg){ const f=document.getElementById(id); f.classList.toggle('bad',!!msg); if(msg) f.querySelector('.pw-e').textContent=msg; return !!msg; }
+async function savePw(){
+  const cur=_pwKnown||document.getElementById('pwCur').value, nw=document.getElementById('pwNew').value, con=document.getElementById('pwCon').value;
+  let bad=false;
+  bad=pwBad('pwCurF',!_pwKnown&&!cur?'Enter your current password.':'')||bad;
+  bad=pwBad('pwNewF',nw.length<8?'Use at least 8 characters.':(nw===cur?'Choose a password different from the current one.':''))||bad;
+  bad=pwBad('pwConF',!bad&&nw!==con?"Passwords don't match.":'')||bad;
+  if(bad) return;
+  const b=document.getElementById('pwSave'); b.disabled=true; b.textContent='Saving…';
+  try{
+    await api('/auth/password',{method:'POST',body:{current:cur,new:nw},noLogout:true});
+    _pwForced=false; _pwKnown=''; document.getElementById('pwModal').hidden=true; toast('Password updated');
+  }catch(e){
+    if(e.fields&&e.fields.current){ _pwKnown=''; document.getElementById('pwCurF').style.display=''; pwBad('pwCurF',e.message); }
+    else pwBad('pwNewF',e.message);
+  }finally{ b.disabled=false; b.textContent='Save password'; }
+}
+document.addEventListener('keydown',e=>{ if(e.key==='Enter' && !document.getElementById('pwModal').hidden && e.target.closest('.pw-box') && e.target.tagName==='INPUT'){ e.preventDefault(); savePw(); } });
 
 /* ---- screen switching (merged single-file) ---- */
 function showApp(){
@@ -1341,7 +1412,7 @@ function showApp(){
   if(_custPoll) clearInterval(_custPoll);
   _custPoll=setInterval(()=>{ if(document.visibilityState==='visible') refresh(true); }, 30000);
 }
-function signOut(){ if(_custPoll){ clearInterval(_custPoll); _custPoll=null; } closeAcct(); setToken(null); tickets=[]; loadState='idle'; showLogin('You have been signed out.'); }
+function signOut(){ const pm=document.getElementById('pwModal'); if(pm) pm.hidden=true; if(_custPoll){ clearInterval(_custPoll); _custPoll=null; } closeAcct(); setToken(null); tickets=[]; loadState='idle'; showLogin('You have been signed out.'); }
 function showLogin(msg){
   if(_clockTimer){ clearInterval(_clockTimer); _clockTimer=null; }
   state.current=null;
@@ -1360,7 +1431,7 @@ function showLogin(msg){
 </script>
 <script>
 
-/* Customer login + sign-up — talks to /api/auth */
+/* Customer login — accounts are created by the Finnoto team (company console → Clients) */
 
 function togglePw(){
   const inp=document.getElementById('password'),btn=document.getElementById('peek'),show=inp.type==='password';
@@ -1371,24 +1442,15 @@ function togglePw(){
     :'<path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/>';
 }
 function setInvalid(id,on){document.getElementById(id).classList.toggle('invalid',on)}
-function clearErrors(){['emailField','passField','suNameField','suCompanyField','suEmailField','suPassField'].forEach(f=>setInvalid(f,false))}
+function clearErrors(){['emailField','passField'].forEach(f=>setInvalid(f,false))}
 function validEmail(v){return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v)}
 function showBanner(m){document.getElementById('bannerText').textContent=m;document.getElementById('banner').classList.add('show')}
 function hideBanner(){document.getElementById('banner').classList.remove('show')}
 function notice(kind){
-  const t={reset:'To reset your password, please contact your account manager at our support team.'};
+  const t={reset:'Forgot your password? Ask your Finnoto account manager to reset it — you will get a new temporary password.'};
   showBanner(t[kind]||''); return false;
 }
-function authMode(m){
-  const su=m==='signup';
-  document.getElementById('loginForm').style.display=su?'none':'';
-  document.getElementById('signupForm').style.display=su?'':'none';
-  document.getElementById('altSignup').style.display=su?'none':'';
-  document.getElementById('altLogin').style.display=su?'':'none';
-  document.getElementById('authTitle').textContent=su?'Create your account':'Welcome back';
-  document.getElementById('authSub').textContent=su?'Sign up to report issues and follow their progress.':'Sign in to track your tickets and raise new issues.';
-  hideBanner(); clearErrors(); return false;
-}
+function authMode(){ hideBanner(); clearErrors(); return false; }
 function busy(btnId, txtId, on, label){
   const b=document.getElementById(btnId); b.classList.toggle('loading',on); b.disabled=on;
   document.getElementById(txtId).textContent=label;
@@ -1405,46 +1467,15 @@ window['_h_loginForm']=async e=>{
   try{
     const r=await api('/auth/login',{method:'POST',body:{email,password,role:'customer'},noLogout:true});
     setToken(r.access_token, document.getElementById('remember').checked);
-    setUser(r.user); busy('submitBtn','submitTxt',false,'Sign in'); showApp();
+    setUser(r.user); busy('submitBtn','submitTxt',false,'Sign in'); showApp(); if(r.user.mustChangePassword) openPw(true, password);
   }catch(err){
     busy('submitBtn','submitTxt',false,'Sign in');
     if(err.status===401){ document.getElementById('emailErr').textContent=err.message; setInvalid('emailField',true); setInvalid('passField',true); }
     else showBanner(err.message);
   }
 };
-window['_h_signupForm']=async e=>{
-  e.preventDefault(); hideBanner(); clearErrors();
-  const v=id=>document.getElementById(id).value.trim();
-  const body={name:v('su-name'), company:v('su-company'), email:v('su-email'), password:document.getElementById('su-password').value};
-  const fieldMap={name:['suNameField','suNameErr'],company:['suCompanyField','suCompanyErr'],email:['suEmailField','suEmailErr'],password:['suPassField','suPassErr']};
-  const errs={};
-  if(!body.name) errs.name='Please enter your name.';
-  if(!body.company) errs.company='Please enter your company name.';
-  if(!validEmail(body.email)) errs.email='Enter a valid email address.';
-  if(body.password.length<8) errs.password='Use at least 8 characters.';
-  const show=fs=>Object.entries(fs).forEach(([k,m])=>{ if(fieldMap[k]){ document.getElementById(fieldMap[k][1]).textContent=m; setInvalid(fieldMap[k][0],true);} });
-  if(Object.keys(errs).length){ show(errs); return; }
-  busy('suBtn','suTxt',true,'Creating account…');
-  try{
-    const r=await api('/auth/register',{method:'POST',body,noLogout:true});
-    setToken(r.access_token, true); setUser(r.user);
-    busy('suBtn','suTxt',false,'Create account');
-    document.getElementById('signupForm').reset(); showApp(); toast('Welcome, '+r.user.name.split(' ')[0]+'!');
-  }catch(err){
-    busy('suBtn','suTxt',false,'Create account');
-    if(err.fields) show(err.fields);
-    showBanner(err.message);
-  }
-};
-
-
 /* bind auth forms without relying on native form submit (blocked in sandboxed frames) */
 (function(){const f=document.getElementById('loginForm'),b=document.getElementById('submitBtn'),h=window['_h_loginForm'];
-  b.addEventListener('click',h);
-  f.addEventListener('submit',e=>{e.preventDefault();h(e);});
-  f.addEventListener('keydown',e=>{if(e.key==='Enter'&&e.target.tagName==='INPUT'){e.preventDefault();if(!b.disabled)h(e);}});
-})();
-(function(){const f=document.getElementById('signupForm'),b=document.getElementById('suBtn'),h=window['_h_signupForm'];
   b.addEventListener('click',h);
   f.addEventListener('submit',e=>{e.preventDefault();h(e);});
   f.addEventListener('keydown',e=>{if(e.key==='Enter'&&e.target.tagName==='INPUT'){e.preventDefault();if(!b.disabled)h(e);}});

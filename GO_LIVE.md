@@ -1,6 +1,6 @@
 # ResolveHQ: Go live for your client
 
-Your client opens the **customer portal**, creates an account, and reports issues with a description and up to 5 screenshots. Your team handles them in the **company console**.
+Your team creates a **business account** for each client in the company console (**Clients**) and adds that client's users. Those users sign in to the **customer portal** and report issues with a description and up to 5 screenshots. Your team handles them in the **company console**, filed under the client's business.
 
 ```
 Client's browser ──► Vercel (customer-portal.html, company-portal.html)
@@ -28,8 +28,8 @@ python app.py                   # API on http://localhost:5000
 python3 -m http.server 8000
 ```
 
-Open http://localhost:8000/customer-portal.html, create an account, and submit an issue with images.
-Create your agent login with `flask --app app create-agent`, then sign in at http://localhost:8000/company-portal.html.
+Create your agent login with `flask --app app create-agent --admin`, then sign in at http://localhost:8000/company-portal.html.
+Go to **Clients → + Add business**, open it, and **Add user**. Sign in at http://localhost:8000/customer-portal.html with the temporary password it shows, then submit an issue with images.
 
 ---
 
@@ -74,12 +74,13 @@ The tables are created automatically on the API's first start. No SQL is needed.
 
 ## 4. Smoke test, then hand it over
 
-- [ ] Customer: sign up → New issue → attach 2 screenshots → Submit → images show on the ticket
-- [ ] Company console: sign in with `ADMIN_EMAIL` → ticket is in the queue with images
+- [ ] Company console: sign in with `ADMIN_EMAIL` → **Clients → + Add business** → open it → **Add user** → copy the login details
+- [ ] Customer portal: sign in with those details → set your own password → New issue → attach 2 screenshots → Submit
+- [ ] Company console: the ticket is in the queue under the business name, with images
 - [ ] Set priority/team → "Request info" → customer sees **Awaiting your reply** and replies
 - [ ] Supabase → Storage → `ticket-attachments/tickets/TKT-…` has the files
 
-**Send your client:** `https://<your-vercel-app>.vercel.app`. They click *Create a customer account*.
+**Onboard a client:** Clients → **+ Add business** → **Add user** for each person → **Copy message** and send it (WhatsApp or email). It contains the portal link, their email and a temporary password. They set their own password at first sign-in. There is no public sign-up.
 
 ---
 
@@ -87,11 +88,12 @@ The tables are created automatically on the API's first start. No SQL is needed.
 
 - **Render free tier sleeps** after 15 minutes idle, so the first request then takes about 30–50 s. Use the $7 Starter plan for a client-facing app.
 - **Image rules:** PNG, JPG or WebP, at most 5 per issue, 5 MB each. Files are checked by their content on both browser and server, not just by extension. Customers can add more images to an open ticket later, up to 5 in total.
-- **Team sharing:** customers with the same work email domain (e.g. everyone `@clientco.com`) see each other's issues, who raised them and their status. Only the person who raised an issue can reply or add images. Personal email providers (gmail.com, outlook.com, yahoo.com…) are never grouped; those users see only their own issues. To stop a domain from being grouped, add it to `NO_SHARE_DOMAINS` (comma-separated) on Render.
+- **Business accounts:** every client is a business under **Clients**. Only users you add there can sign in to the customer portal, and everything they raise is filed under that business, so the console always shows which client and which person raised it. Users of the same business see each other's issues, who raised them and their status; only the person who raised an issue can reply or add images. Different businesses never see each other's issues.
+- **Managing access:** any teammate can create businesses and add users. Open a business to **Reset password** (gives a new temporary password) or **Deactivate** a user. Admins can **Pause access** for a whole business: all its users are signed out immediately and can't sign in until you restore it. Renaming a business updates its existing issues too.
+- **Upgrading from sign-up:** when this version first starts, customers who signed up earlier are grouped into business accounts automatically (by work email domain; personal emails like gmail.com get their own). Check **Clients** afterwards and rename or tidy them up. Their passwords keep working.
 - **Duplicate check:** while typing a new issue's title, customers see similar open issues their team already raised.
 - **Privacy:** images live in a private bucket and links expire after 1 hour. Customers of different companies never see each other's issues.
-- **Important for team sharing:** there is no email verification yet, so someone could sign up with a fake `@clientco.com` address and see that client's issues. Before onboarding many clients, add email verification (a code sent by email).
 - **Your team:** the `ADMIN_EMAIL` account is an admin. In the console, go to **Team → Add a teammate**. You get a temporary password to share, and they change it under Team → Your account. Admins can make others admins, reset passwords, or deactivate someone; a deactivated person's open tickets go back to the queue.
 - **Slack alerts:** set `SLACK_WEBHOOK_URL` (Slack → Apps → Incoming Webhooks → pick a channel) and `CONSOLE_URL` (`https://resolvehq.vercel.app/company-portal`) on Render. Every new issue (🚨 for urgent) and every customer reply is posted to that channel with an **Open in console** button.
 - **Every customer issue appears in the console** for all teammates. The queue refreshes every 30 s and shows a pop-up when a new issue arrives. Use **Assignee → Assign to me** and the **Assigned to me / Unassigned** filters to split the work.
-- **Not built yet:** email verification, password reset emails, and email notifications on new issues or replies.
+- **Not built yet:** password reset by email (for now your team resets it from the business page), and email notifications on new issues or replies.

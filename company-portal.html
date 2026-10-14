@@ -199,6 +199,18 @@
   .cust .ca{width:26px;height:26px;border-radius:50%;background:#E7ECF4;color:#566;display:grid;place-items:center;font-size:11px;font-weight:600;color:#4A5468;flex:none}
   .cust .cn{font-size:13px;font-weight:600;color:#33405A;line-height:1.1}
   .cust .cc{font-size:11px;color:var(--muted)}
+  .ptag{display:inline-block;font-size:10px;font-weight:700;letter-spacing:.03em;color:#8A5216;background:#FFF1DE;border:1px solid #F1D3A8;border-radius:5px;padding:0 5px;margin-left:5px;vertical-align:1px}
+  .client-card{border:1px solid var(--line);border-radius:12px;padding:14px 16px;background:#F9FAFC}
+  .client-card .cl-name{font-family:"Space Grotesk",sans-serif;font-size:17px;font-weight:600;color:var(--text);line-height:1.25}
+  .client-card .cl-sub{font-size:12.5px;color:var(--muted);margin-top:2px}
+  .client-card .cl-row{display:grid;grid-template-columns:72px 1fr;gap:4px 10px;margin-top:10px;font-size:13px}
+  .client-card .cl-row .k{color:var(--muted)}
+  .client-card .cl-row .v{color:var(--text);word-break:break-word;user-select:all}
+  .client-card .cl-link{margin-top:10px;font-size:12.5px;font-weight:600;color:var(--accent-deep);background:none;border:0;padding:0;cursor:pointer}
+  .client-card .cl-link:hover{text-decoration:underline}
+  .people{font-size:12px;color:var(--muted);margin-top:3px}
+  .rename-row{display:flex;gap:6px;align-items:center}
+  .rename-row input{font:inherit;font-size:13px;padding:6px 9px;border:1px solid var(--line-strong);border-radius:8px;min-width:0;width:220px}
 
   .badge{display:inline-flex;align-items:center;gap:5px;font-size:11.5px;font-weight:600;padding:4px 9px;border-radius:7px;white-space:nowrap}
   .badge .d{width:6px;height:6px;border-radius:50%}
@@ -361,13 +373,40 @@
   .fgrid .bad .fe{display:block}
   .chk{display:flex;align-items:center;gap:8px;font-size:13px;color:#3D4658;cursor:pointer}
   .chk input{width:auto}
-  .role-pill2{font-size:11px;font-weight:600;padding:3px 8px;border-radius:999px;background:#EEF1F7;color:#3D4658;border:1px solid var(--line)}
+  .role-pill2{white-space:nowrap;font-size:11px;font-weight:600;padding:3px 8px;border-radius:999px;background:#EEF1F7;color:#3D4658;border:1px solid var(--line)}
   .role-pill2.admin{background:color-mix(in srgb,var(--accent) 14%,#fff);color:var(--accent-deep);border-color:color-mix(in srgb,var(--accent) 30%,transparent)}
   .inactive td{opacity:.55}
   .row-acts{display:flex;gap:6px;flex-wrap:wrap}
   .mini-btn{font-family:inherit;font-size:12px;font-weight:600;padding:5px 9px;border-radius:7px;border:1px solid var(--line-strong);background:var(--surface);color:#3D4658;cursor:pointer;white-space:nowrap}
   .mini-btn:hover{background:#F4F6FA}
   .mini-btn.danger{color:var(--danger)}
+  .role-pill2.paused{background:#FDECEA;color:var(--danger);border-color:#F3C7C2;margin-left:6px;vertical-align:2px}
+  .role-pill2.ok{background:#E8F6EE;color:#1E7A46;border-color:#BFE5CF}
+  .role-pill2.waiting{background:#FFF4E2;color:#8A5216;border-color:#F1D3A8}
+  .needs-users{font-size:12px;font-weight:600;color:#8A5216}
+  .open-link{font-size:12.5px;font-weight:600;color:var(--accent-deep);white-space:nowrap}
+  .hint-bar{padding:10px 18px;font-size:12.5px;color:var(--muted);border-bottom:1px solid var(--line)}
+  .fgrid-2{grid-template-columns:1fr 1fr}
+  @media (max-width:700px){.fgrid-2{grid-template-columns:1fr}}
+  .form-acts{display:flex;justify-content:flex-end;gap:8px;margin-top:14px}
+  .btn-sm{padding:7px 12px;font-size:12.5px}
+  .back-link{background:none;border:0;padding:0 0 12px;font:inherit;font-size:13px;font-weight:600;color:var(--accent-deep);cursor:pointer}
+  .back-link:hover{text-decoration:underline}
+  .biz-head{display:flex;gap:14px;align-items:flex-start;padding:18px;flex-wrap:wrap}
+  .ca.ca-lg{width:46px;height:46px;font-size:16px;font-weight:700;border-radius:12px;flex:none;display:grid;place-items:center;background:color-mix(in srgb,var(--accent) 16%,#fff);color:var(--accent-deep)}
+  .biz-users td:last-child .row-acts{flex-wrap:nowrap;justify-content:flex-end}
+  .biz-name{font-family:"Space Grotesk",sans-serif;font-size:21px;font-weight:600;line-height:1.2}
+  .biz-meta{font-size:13px;color:var(--muted);margin-top:4px;word-break:break-word}
+  .biz-notes{font-size:13px;color:#3D4658;margin-top:8px;background:#F9FAFC;border:1px solid var(--line);border-radius:8px;padding:7px 10px;white-space:pre-wrap}
+  .paused-bar{margin:0 18px 14px;padding:9px 12px;border-radius:9px;background:#FDECEA;border:1px solid #F3C7C2;color:#8E2F27;font-size:13px}
+  .biz-stats{display:flex;gap:28px;align-items:center;flex-wrap:wrap;padding:12px 18px 16px;border-top:1px solid var(--line)}
+  .biz-stats b{font-family:"Space Grotesk",sans-serif;font-size:20px;display:block;line-height:1.1}
+  .biz-stats span{font-size:12px;color:var(--muted)}
+  .biz-stats .cl-link{margin-left:auto;margin-top:0}
+  .biz-stats .cl-link:disabled{color:var(--muted-2);cursor:default;text-decoration:none}
+  .cred{display:grid;grid-template-columns:70px 1fr;align-items:center;gap:8px;margin-top:6px}
+  .cred span{font-size:12px;color:var(--muted)}
+  .cred code{word-break:break-all}
   .secret{margin-top:14px;padding:12px 14px;border-radius:11px;background:#FFF8EE;border:1px solid #F0D9B5;font-size:13px}
   .secret code{font-family:"IBM Plex Mono",monospace;font-size:13.5px;background:#fff;border:1px solid #F0D9B5;border-radius:6px;padding:3px 7px;user-select:all}
   .assignee{display:inline-flex;align-items:center;gap:6px;font-size:12.5px;color:#3D4658;margin-top:4px}
@@ -504,7 +543,7 @@
       </button>
       <button data-view="customers" onclick="go('customers')">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg>
-        Customers
+        Clients
       </button>
       <button data-view="insights" onclick="go('insights')">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="M7 15l3-4 3 2 4-6"/></svg>
@@ -679,6 +718,7 @@ async function swReady(){
   return _swReg;
 }
 async function checkPush(){
+  if(window.__RHQ_PREVIEW){ pushState='preview'; renderPanelIfOpen(); return; }
   const supported = 'serviceWorker' in navigator && 'PushManager' in window && 'Notification' in window;
   if(!supported){ pushState = (isIOS && !isStandalone) ? 'ios-install' : 'unsupported'; renderPanelIfOpen(); return; }
   if(Notification.permission==='denied'){ pushState='denied'; renderPanelIfOpen(); return; }
@@ -718,6 +758,7 @@ function alertFooter(){
     denied:'<span>Alerts are blocked. Click the 🔒 next to the address bar → Notifications → Allow, then reload.</span>',
     'ios-install':'<span>On iPhone: tap Share → <b>Add to Home Screen</b>, open ResolveHQ from there, then turn on alerts.</span>',
     unsupported:'<span>This browser can’t show alerts. Use Chrome, Edge, Firefox or Safari.</span>',
+    preview:'<span>Device pop-up alerts work on the live console (resolvehq.vercel.app/company-portal), not in this preview.</span>',
   };
   return `<div class="np-foot ${pushState==='on'?'':'alerts-off'}">${m[pushState]||m.off}</div>`;
 }
@@ -775,7 +816,8 @@ function needsTriage(t){ return !t.priority || !t.team; }
 function badge(s){ const x=STATUS[s]; return `<span class="badge ${x.cls}"><span class="d"></span>${x.label}</span>`; }
 function prio(p){ return p ? `<span class="prio p-${p}" title="${PLABEL[p]} priority">${p}</span>` : '<span class="prio p-none">Untriaged</span>'; }
 function team(t){ return t.team ? `<span class="team-tag">${esc(t.team)}</span>` : '<span class="team-none">— unassigned</span>'; }
-function custCell(c){ return `<div class="cust"><div class="ca">${esc(c.initials)}</div><div><div class="cn">${esc(c.company)}</div><div class="cc">${esc(c.name)}</div></div></div>`; }
+function custCell(c){ return `<div class="cust"><div class="ca">${esc(ini2(c.company))}</div><div><div class="cn">${esc(c.company)}</div><div class="cc">${esc(c.name)}</div></div></div>`; }
+function ini2(n){ return String(n||'?').replace(/[^A-Za-z0-9 ]/g,' ').split(/\s+/).filter(Boolean).slice(0,2).map(w=>w[0]).join('').toUpperCase()||'?'; }
 
 function counts(){
   const c={total:tickets.length,open:0,pending:0,closed:0,triage:0,crit:0};
@@ -786,7 +828,7 @@ function counts(){
 }
 
 /* ---- nav ---- */
-function go(view){ state.view=view; state.current=null; if(view!=='team') _lastSecret=null; if(view!=='queue'){ state.cust='all'; } setNav(view); closeMenu(); render(); }
+function go(view){ state.view=view; state.current=null; if(view!=='team') _lastSecret=null; if(view==='customers'){ bizList=null; state.biz=null; bizCur=null; bizSecret=null; bizMode=null; } if(view!=='queue'){ state.cust='all'; } setNav(view); closeMenu(); render(); }
 function setNav(view){ document.querySelectorAll('.nav button[data-view]').forEach(b=>b.classList.toggle('active', b.dataset.view===view)); }
 function openMenu(){ $('#side').classList.add('open'); $('#scrim').classList.add('show'); }
 function closeMenu(){ $('#side').classList.remove('open'); $('#scrim').classList.remove('show'); }
@@ -795,7 +837,7 @@ function toast(msg){ const t=$('#toast'); $('#toastText').textContent=msg; t.cla
 const TITLES = {
   dashboard:['Dashboard','Queue health across all customers'],
   queue:['Ticket queue','Triage, prioritize, assign and resolve'],
-  customers:['Customers','Issues grouped by customer account'],
+  customers:['Clients','A business account for each client, and the people who can sign in to the customer portal'],
   insights:['Insights','Trends, recurring issues and turnaround'],
   team:['Team','Your teammates and your account'],
   detail:['Ticket','Manage and respond'],
@@ -883,7 +925,7 @@ function viewQueue(){
           ${PRIOS.map(p=>`<option value="${p}"${pf===p?' selected':''}>${p} · ${PLABEL[p]}</option>`).join('')}
         </select>
         <select class="selmini" onchange="setCustFilter(this.value)">
-          <option value="all"${cf==='all'?' selected':''}>All customers</option>
+          <option value="all"${cf==='all'?' selected':''}>All clients</option>
           ${companies.map(c=>`<option value="${esc(c)}"${cf===c?' selected':''}>${esc(c)}</option>`).join('')}
         </select>
       </div>
@@ -893,7 +935,7 @@ function viewQueue(){
 }
 
 function queueTable(list){
-  return `<table><thead><tr><th>Issue</th><th>Customer</th><th>Priority</th><th>Team / owner</th><th>Status</th><th>Updated</th></tr></thead><tbody>
+  return `<table><thead><tr><th>Issue</th><th>Client</th><th>Priority</th><th>Team / owner</th><th>Status</th><th>Updated</th></tr></thead><tbody>
     ${list.map(t=>`<tr onclick="openTicket('${t.id}')">
       <td><div class="t-title">${esc(t.title)}${isUrgent(t)?'<span class="urgent-tag">URGENT</span>':''}</div><div class="t-id mono">${t.id} · ${esc(TYPES[t.type]||t.type)}</div></td>
       <td>${custCell(t.customer)}</td>
@@ -906,23 +948,183 @@ function queueTable(list){
 }
 function emptyState(msg){ return `<div class="empty"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg><p>${esc(msg)}</p><small>Tickets appear here as customers submit them.</small></div>`; }
 
-/* ---- CUSTOMERS ---- */
-function viewCustomers(){
-  const byCo={};
-  tickets.forEach(t=>{ const k=t.customer.company; (byCo[k]=byCo[k]||{c:t.customer,all:0,open:0,closed:0,crit:0}); const g=STATUS[t.status].group; byCo[k].all++; if(g==='closed')byCo[k].closed++; else byCo[k].open++; if((t.priority==='P0'||t.priority==='P1')&&g==='open')byCo[k].crit++; });
-  const rows=Object.values(byCo).sort((a,b)=>b.open-a.open);
-  return `
+/* ---- CLIENTS (business accounts) ---- */
+let bizList=null, bizCur=null, bizSecret=null, bizMode=null;   // bizMode: 'add' | 'edit' | null
+let bizDraft={}, userDraft={};
+const PORTAL_URL = /vercel\.app$/.test(location.hostname) ? location.origin
+  : (/^https?:$/.test(location.protocol) && !/preview/.test(location.hostname) ? location.href.replace(/company-portal(\.html)?.*$/,'customer-portal$1') : 'https://resolvehq.vercel.app');
+const attr=s=>esc(s).replace(/'/g,'&#39;');
+async function loadBizList(){ try{ bizList=await api('/businesses'); }catch(e){ bizList=[]; toast(e.message); } if(state.view==='customers' && !state.current) render(); }
+async function loadBiz(id){ try{ bizCur=await api('/businesses/'+id); }catch(e){ toast(e.message); state.biz=null; } if(state.view==='customers' && !state.current) render(); }
+function openBiz(id){ state.view='customers'; setNav('customers'); state.current=null; state.biz=id; bizCur=null; bizSecret=null; bizMode=null; userDraft={}; render(); window.scrollTo(0,0); }
+function bizBack(){ state.biz=null; bizCur=null; bizSecret=null; bizMode=null; bizList=null; render(); }
+function viewCustomers(){ return state.biz ? viewBiz() : viewBizList(); }
+
+function bizStatus(b){ return b.active ? '' : ' <span class="role-pill2 paused">Access paused</span>'; }
+function viewBizList(){
+  if(bizList===null){ loadBizList(); return `<div class="panel-card"><div class="loading-box"><div class="sp"></div>Loading clients…</div></div>`; }
+  const d=bizDraft;
+  const form = bizMode==='add' ? `<div class="panel-card" style="margin-bottom:18px"><div class="panel-head"><h2>New business account</h2></div><div class="card-pad">
+      <div class="fgrid fgrid-2">
+        <div id="bf-name"><label>Business name *</label><input id="b-name" maxlength="120" placeholder="e.g. Gee Traders Pvt Ltd" value="${attr(d.name||'')}" oninput="bizDraft.name=this.value"><div class="fe" id="b-name-err">Enter the business name.</div></div>
+        <div id="bf-email"><label>Contact email</label><input id="b-email" type="email" placeholder="accounts@client.com" value="${attr(d.contactEmail||'')}" oninput="bizDraft.contactEmail=this.value"><div class="fe">Enter a valid email.</div></div>
+        <div><label>Phone</label><input id="b-phone" maxlength="40" placeholder="Optional" value="${attr(d.phone||'')}" oninput="bizDraft.phone=this.value"></div>
+        <div><label>Notes (only our team sees this)</label><input id="b-notes" maxlength="500" placeholder="Plan, account manager, GSTIN…" value="${attr(d.notes||'')}" oninput="bizDraft.notes=this.value"></div>
+      </div>
+      <div class="form-acts"><button class="btn btn-ghost" onclick="bizMode=null;bizDraft={};render()">Cancel</button><button class="btn btn-primary" id="b-btn" onclick="createBiz()">Create business</button></div>
+    </div></div>` : '';
+  const rows=bizList.map(b=>`<tr onclick="openBiz(${b.id})" class="${b.active?'':'inactive'}">
+      <td><div class="cust"><div class="ca">${esc(b.initials)}</div><div><div class="cn" style="font-size:14px">${esc(b.name)}${bizStatus(b)}</div><div class="cc">${b.contactEmail?esc(b.contactEmail):'<span style="color:var(--muted-2)">No contact email</span>'}</div></div></div></td>
+      <td style="white-space:nowrap">${b.users?`${b.users} user${b.users===1?'':'s'}`:'<span class="needs-users">No users yet</span>'}</td>
+      <td><b>${b.open}</b></td>
+      <td>${b.urgent?`<span class="prio p-P1">${b.urgent}</span>`:'<span style="color:var(--muted-2)">0</span>'}</td>
+      <td style="color:var(--muted)">${b.total}</td>
+      <td style="color:var(--muted)">${b.lastAt?rel(b.lastAt):'—'}</td>
+      <td style="text-align:right"><span class="open-link">Open →</span></td>
+    </tr>`).join('');
+  return `${form}
   <div class="panel-card">
-    <div class="panel-head"><h2>${rows.length} customer accounts</h2></div>
-    <table><thead><tr><th>Customer</th><th>Open</th><th>P0/P1 open</th><th>Closed</th><th>Total</th></tr></thead><tbody>
-    ${rows.map(r=>`<tr onclick="openCustomer('${esc(r.c.company)}')">
-      <td>${custCell(r.c)}</td>
-      <td><b>${r.open}</b></td>
-      <td>${r.crit?`<span class="prio p-P1">${r.crit}</span>`:'<span style="color:var(--muted-2)">0</span>'}</td>
-      <td style="color:var(--muted)">${r.closed}</td>
-      <td style="color:var(--muted)">${r.all}</td>
-    </tr>`).join('')}
-    </tbody></table>
+    <div class="panel-head"><h2>${bizList.length} business account${bizList.length===1?'':'s'}</h2>
+      <div style="display:flex;gap:8px"><button class="refresh-btn" onclick="bizList=null;render()">Refresh</button>${bizMode==='add'?'':'<button class="btn btn-primary btn-sm" onclick="bizMode=\'add\';render();setTimeout(()=>$(\'#b-name\')&&$(\'#b-name\').focus(),0)">+ Add business</button>'}</div></div>
+    <div class="hint-bar">Create a business account for each client, then open it to add the people who may sign in to the customer portal. Everything they raise is filed under that business.</div>
+    ${bizList.length?`<table><thead><tr><th>Business</th><th>Users</th><th>Open</th><th>P0/P1 open</th><th>Total</th><th>Last activity</th><th></th></tr></thead><tbody>${rows}</tbody></table>`
+      :`<div class="empty"><p>No business accounts yet</p><small>Click <b>+ Add business</b> to create your first client.</small></div>`}
+  </div>`;
+}
+async function createBiz(){
+  const d=bizDraft, name=(d.name||'').trim(), email=(d.contactEmail||'').trim();
+  bad('bf-name',!name); bad('bf-email',email && !validEmail(email)); if(!name || (email && !validEmail(email))) return;
+  const b=$('#b-btn'); b.disabled=true; b.textContent='Creating…';
+  try{
+    const r=await api('/businesses',{method:'POST',body:{name,contactEmail:email,phone:d.phone||'',notes:d.notes||''}});
+    bizDraft={}; bizMode=null; toast(r.name+' created — now add its users'); openBiz(r.id);
+    setTimeout(()=>$('#u-name')&&$('#u-name').focus(),300);
+  }catch(e){ b.disabled=false; b.textContent='Create business'; if(e.status===409){ $('#b-name-err').textContent=e.message; bad('bf-name',true);} toast(e.message); }
+}
+
+function viewBiz(){
+  const b=bizCur;
+  if(!b || b.id!==state.biz){ if(!b) loadBiz(state.biz); return `<div class="panel-card"><div class="loading-box"><div class="sp"></div>Loading business…</div></div>`; }
+  const admin=AGENT.isAdmin, d=bizDraft, u=userDraft;
+  const head = bizMode==='edit' ? `<div class="card-pad"><div class="fgrid fgrid-2">
+        <div id="bf-name"><label>Business name *</label><input id="b-name" maxlength="120" value="${attr(d.name??b.name)}" oninput="bizDraft.name=this.value"><div class="fe" id="b-name-err">Enter the business name.</div></div>
+        <div id="bf-email"><label>Contact email</label><input id="b-email" type="email" value="${attr(d.contactEmail??b.contactEmail)}" oninput="bizDraft.contactEmail=this.value"><div class="fe">Enter a valid email.</div></div>
+        <div><label>Phone</label><input id="b-phone" maxlength="40" value="${attr(d.phone??b.phone)}" oninput="bizDraft.phone=this.value"></div>
+        <div><label>Notes (only our team sees this)</label><input id="b-notes" maxlength="500" value="${attr(d.notes??b.notes)}" oninput="bizDraft.notes=this.value"></div>
+      </div>
+      <div class="form-acts"><button class="btn btn-ghost" onclick="bizMode=null;bizDraft={};render()">Cancel</button><button class="btn btn-primary" id="b-btn" onclick="saveBiz()">Save changes</button></div></div>`
+    : `<div class="biz-head">
+        <div class="ca ca-lg">${esc(b.initials)}</div>
+        <div style="min-width:0;flex:1">
+          <div class="biz-name">${esc(b.name)}${bizStatus(b)}</div>
+          <div class="biz-meta">${[b.contactEmail&&esc(b.contactEmail), b.phone&&esc(b.phone), 'Client since '+new Date(b.createdAt).toLocaleDateString(undefined,{day:'numeric',month:'short',year:'numeric'})].filter(Boolean).join(' · ')}</div>
+          ${b.notes?`<div class="biz-notes">${esc(b.notes)}</div>`:''}
+        </div>
+        <div class="row-acts">
+          <button class="mini-btn" onclick="bizMode='edit';bizDraft={};render()">Edit details</button>
+          ${admin?`<button class="mini-btn ${b.active?'danger':''}" onclick="toggleBiz()">${b.active?'Pause access':'Restore access'}</button>`:''}
+        </div>
+      </div>
+      ${b.active?'':`<div class="paused-bar">Access is paused: nobody from ${esc(b.name)} can sign in to the customer portal. Their issues stay here.</div>`}
+      <div class="biz-stats">
+        <div><b>${b.users}</b><span>Users</span></div><div><b>${b.open}</b><span>Open issues</span></div>
+        <div><b>${b.urgent}</b><span>P0/P1 open</span></div><div><b>${b.total}</b><span>All issues</span></div>
+        <button class="cl-link" onclick="openCustomer('${attr(b.name).replace(/\\/g,'\\\\')}')" ${b.total?'':'disabled'}>View ${b.total} issue${b.total===1?'':'s'} →</button>
+      </div>`;
+  const people=b.people.map(p=>{
+    const st = !p.active ? '<span class="role-pill2">Deactivated</span>'
+      : p.mustChangePassword ? '<span class="role-pill2 waiting" title="Has a temporary password and hasn\'t set their own yet">Temporary password</span>'
+      : '<span class="role-pill2 ok">Active</span>';
+    return `<tr class="${p.active?'':'inactive'}">
+      <td><div class="cust"><div class="ca">${esc(ini2(p.name))}</div><div><div class="cn">${esc(p.name)}</div><div class="cc">${esc(p.email)}</div></div></div></td>
+      <td>${st}</td>
+      <td style="color:var(--muted)">${p.lastLoginAt?rel(p.lastLoginAt):'Never'}</td>
+      <td><div class="row-acts">
+        ${p.active?`<button class="mini-btn" onclick="userAct(${p.id},{resetPassword:true})">Reset password</button>`:''}
+        <button class="mini-btn ${p.active?'danger':''}" onclick="userAct(${p.id},{active:${!p.active}})">${p.active?'Deactivate':'Reactivate'}</button>
+      </div></td></tr>`;}).join('');
+  const s=bizSecret;
+  const secret = s ? `<div class="secret">
+      <div style="font-weight:600;margin-bottom:6px">${s.reset?'New temporary password for':'Login details for'} ${esc(s.name)}</div>
+      <div class="cred"><span>Portal</span><code>${esc(PORTAL_URL)}</code></div>
+      <div class="cred"><span>Email</span><code>${esc(s.email)}</code></div>
+      <div class="cred"><span>Password</span><code>${esc(s.pw)}</code></div>
+      <div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap"><button class="btn btn-primary btn-sm" onclick="copyCreds()">Copy message</button><button class="btn btn-ghost btn-sm" onclick="bizSecret=null;render()">Done</button></div>
+      <div style="color:var(--muted);font-size:12px;margin-top:8px">Shown only once. Send it privately (WhatsApp or email). They'll be asked to set their own password at first sign-in.</div>
+    </div>` : '';
+  return `<button class="back-link" onclick="bizBack()">← All clients</button>
+  <div class="panel-card" style="margin-bottom:18px">${head}</div>
+  <div class="team-grid">
+    <div class="panel-card">
+      <div class="panel-head"><h2>Users (${b.people.filter(p=>p.active).length} active)</h2></div>
+      <div class="hint-bar">Only these people can sign in to the customer portal for ${esc(b.name)}. They see every issue raised by their colleagues here; only the person who raised an issue can reply to it.</div>
+      ${b.people.length?`<table class="biz-users"><thead><tr><th>Name</th><th>Status</th><th>Last sign-in</th><th></th></tr></thead><tbody>${people}</tbody></table>`
+        :`<div class="empty"><p>No users yet</p><small>Add the first person from ${esc(b.name)} on the right.</small></div>`}
+    </div>
+    <div class="panel-card"><div class="panel-head"><h2>Add a user</h2></div><div class="card-pad">
+      <div class="fgrid">
+        <div id="uf-name"><label>Name</label><input id="u-name" maxlength="120" placeholder="Full name" value="${attr(u.name||'')}" oninput="userDraft.name=this.value"><div class="fe">Enter a name.</div></div>
+        <div id="uf-email"><label>Email (their login)</label><input id="u-email" type="email" placeholder="name@client.com" value="${attr(u.email||'')}" oninput="userDraft.email=this.value" onkeydown="if(event.key==='Enter')addBizUser()"><div class="fe" id="u-email-err">Enter a valid email.</div></div>
+        <button class="btn btn-primary" id="u-btn" onclick="addBizUser()" style="justify-content:center" ${b.active?'':'disabled title="Restore access first"'}>Add user</button>
+      </div>${secret}
+    </div></div>
+  </div>`;
+}
+async function saveBiz(){
+  const b=bizCur, d=bizDraft, name=(d.name??b.name).trim(), email=(d.contactEmail??b.contactEmail).trim();
+  bad('bf-name',!name); bad('bf-email',email && !validEmail(email)); if(!name || (email && !validEmail(email))) return;
+  const btn=$('#b-btn'); btn.disabled=true; btn.textContent='Saving…';
+  try{
+    bizCur=await api('/businesses/'+b.id,{method:'PATCH',body:{name,contactEmail:email,phone:d.phone??b.phone,notes:d.notes??b.notes}});
+    bizMode=null; bizDraft={}; if(name!==b.name) await refresh(true); render(); toast('Saved');
+  }catch(e){ btn.disabled=false; btn.textContent='Save changes'; if(e.status===409){ $('#b-name-err').textContent=e.message; bad('bf-name',true);} toast(e.message); }
+}
+async function toggleBiz(){
+  const b=bizCur;
+  if(b.active && !confirmInline('biz'+b.id,'pause','Click Pause access again to confirm')) return;
+  try{ bizCur=await api('/businesses/'+b.id,{method:'PATCH',body:{active:!b.active}}); render(); toast(bizCur.active?'Access restored':'Access paused — '+b.name+' users are signed out'); }
+  catch(e){ toast(e.message); }
+}
+async function addBizUser(){
+  const name=(userDraft.name||'').trim(), email=(userDraft.email||'').trim().toLowerCase();
+  bad('uf-name',!name); bad('uf-email',!validEmail(email)); if(!name||!validEmail(email)) return;
+  const btn=$('#u-btn'); btn.disabled=true; btn.textContent='Adding…';
+  try{
+    const r=await api(`/businesses/${bizCur.id}/users`,{method:'POST',body:{name,email}});
+    bizSecret={name:r.name,email:r.email,pw:r.tempPassword}; userDraft={};
+    await loadBiz(bizCur.id); toast(r.name+' can now sign in');
+  }catch(e){ btn.disabled=false; btn.textContent='Add user'; if(e.status===409){ $('#u-email-err').textContent=e.message; bad('uf-email',true);} toast(e.message); }
+}
+async function userAct(uid, body){
+  const p=bizCur.people.find(x=>x.id===uid);
+  if(body.active===false && !confirmInline('u'+uid,'deactivate')) return;
+  if(body.resetPassword && !confirmInline('u'+uid,'reset','Click Reset password again to confirm — their current password stops working')) return;
+  try{
+    const r=await api(`/businesses/${bizCur.id}/users/${uid}`,{method:'PATCH',body});
+    if(r.tempPassword) bizSecret={name:r.name,email:r.email,pw:r.tempPassword,reset:true};
+    await loadBiz(bizCur.id);
+    toast(body.resetPassword?'New temporary password created':body.active===false?p.name+' can no longer sign in':p.name+' reactivated');
+  }catch(e){ toast(e.message); }
+}
+function copyCreds(){
+  const s=bizSecret; if(!s) return;
+  const msg=`Hi ${s.name.split(' ')[0]},\n\n${s.reset?'Your password for the Finnoto support portal has been reset.':'Your account for the Finnoto support portal is ready. Use it to raise and track issues.'}\n\nPortal: ${PORTAL_URL}\nEmail: ${s.email}\nTemporary password: ${s.pw}\n\nYou'll be asked to set your own password when you sign in.`;
+  const done=()=>toast('Copied — paste it into WhatsApp or email');
+  if(navigator.clipboard && window.isSecureContext) navigator.clipboard.writeText(msg).then(done,()=>fallbackCopy(msg,done)); else fallbackCopy(msg,done);
+}
+function fallbackCopy(text,done){ const t=document.createElement('textarea'); t.value=text; t.style.position='fixed'; t.style.opacity='0'; document.body.appendChild(t); t.select(); try{ document.execCommand('copy'); done(); }catch(e){ toast('Select the details and copy them'); } t.remove(); }
+
+function clientCard(t){
+  const c=t.customer; const n=tickets.filter(x=>x.customer.company===c.company).length;
+  return `<div class="client-card">
+    <div class="cl-name">${esc(c.company)}</div>
+    <div class="cl-sub">Business account</div>
+    <div class="cl-row"><span class="k">Raised by</span><span class="v">${esc(c.name)}</span>
+      <span class="k">Email</span><span class="v">${esc(c.email||'')}</span></div>
+    <div style="display:flex;gap:14px;flex-wrap:wrap">
+      <button class="cl-link" onclick="openCustomer('${attr(c.company).replace(/\\/g,'\\\\')}')">All ${n} issue${n===1?'':'s'} from ${esc(c.company)} →</button>
+      ${c.businessId?`<button class="cl-link" onclick="openBiz(${c.businessId})">Business account →</button>`:''}
+    </div>
   </div>`;
 }
 function openCustomer(company){ state.view='queue'; state.filter='all'; state.prio='all'; state.cust=company; setNav('queue'); state.current=null; render(); window.scrollTo(0,0); }
@@ -1029,7 +1231,7 @@ function viewDetail(t){
         <h2>${esc(t.title)}</h2>
         <div class="d-meta"><span class="mono">${t.id}</span> · ${badge(t.status)} · ${prio(t.priority)} · ${esc(TYPES[t.type]||t.type)} · ${esc(t.category)}</div>
       </div>
-      <div class="d-sec"><div class="h">Reported by</div>${custCell(t.customer)}${t.customer.email?`<div style="font-size:12.5px;color:var(--muted);margin-top:6px"><a href="mailto:${esc(t.customer.email)}" style="color:inherit">${esc(t.customer.email)}</a></div>`:''}</div>
+      <div class="d-sec"><div class="h">Raised by</div>${clientCard(t)}</div>
       <div class="d-sec"><div class="h">Description</div><div class="d-desc">${esc(t.desc)}</div></div>
       ${attSec}
       <div class="composer">
@@ -1153,9 +1355,9 @@ async function agentAct(id, body){
   }catch(e){ toast(e.message); }
 }
 let _confirm=null;
-function confirmInline(id,what){ // two-click confirm (no browser dialogs)
+function confirmInline(id,what,msg){ // two-click confirm (no browser dialogs)
   if(_confirm && _confirm.id===id && _confirm.what===what && Date.now()-_confirm.at<4000){ _confirm=null; return true; }
-  _confirm={id,what,at:Date.now()}; toast('Click Deactivate again to confirm'); return false;
+  _confirm={id,what,at:Date.now()}; toast(msg||'Click Deactivate again to confirm'); return false;
 }
 async function changePw(){
   const cur=$('#p-cur').value, nw=$('#p-new').value; bad('pf-cur',false); bad('pf-new',nw.length<8); if(nw.length<8) return;
@@ -1206,7 +1408,7 @@ let _poll=null;
 function showApp(){
   document.getElementById('loginScreen').style.display='none';
   document.getElementById('appScreen').style.display='block';
-  state.current=null; state.view='dashboard'; state.filter='all'; state.prio='all'; state.cust='all';
+  state.current=null; state.view='dashboard'; state.filter='all'; state.prio='all'; state.cust='all'; state.biz=null; bizList=null; bizCur=null; bizSecret=null;
   setNav('dashboard'); window.scrollTo(0,0); refresh();
   checkPush().then(()=>{ if(pushState==='off' || pushState==='ios-install'){ setTimeout(()=>toast('Get a pop-up for every new customer issue: click the 🔔 bell → Turn on alerts'),1500); } });
   if(_poll) clearInterval(_poll);

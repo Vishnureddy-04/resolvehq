@@ -33,14 +33,19 @@ def create_app(config_object=Config):
     def _still_active(_header, payload):
         from models import User
         u = db.session.get(User, int(payload["sub"]))
-        return bool(u and u.active is not False)
+        if not u or u.active is False:
+            return False
+        if u.role == "customer" and (not u.business or u.business.active is False):
+            return False                     # business paused: sign everyone out
+        return True
 
     @jwt.token_verification_failed_loader
     def _deactivated(_header, _payload):
         return jsonify({"error": "Your account has been deactivated. Contact your admin."}), 401
 
-    from routes import agents, auth, files, notifications, push as push_routes, tickets
+    from routes import agents, auth, businesses, files, notifications, push as push_routes, tickets
     app.register_blueprint(auth.bp)
+    app.register_blueprint(businesses.bp)
     app.register_blueprint(push_routes.bp)
     app.register_blueprint(notifications.bp)
     app.register_blueprint(agents.bp)
@@ -63,17 +68,28 @@ def create_app(config_object=Config):
 
     with app.app_context():
         import models  # noqa: F401  (register tables)
-        db.create_all()
-        _add_missing_columns()
-        _bootstrap_admin(app)
+        # gunicorn starts several workers at once: let only one run the setup at a time
+        lock = db.engine.connect() if db.engine.dialect.name == "postgresql" else None
+        if lock is not None:
+            lock.execute(text("SELECT pg_advisory_lock(724111)"))
         try:
-            import push
-            push.ensure_keys()
-        except Exception:
-            app.logger.exception("could not prepare push keys")
-        if app.config["SEED_DEMO"]:
-            from seed_data import seed_demo_data
-            seed_demo_data()
+            db.create_all()
+            _add_missing_columns()
+            _backfill_businesses(app)
+            _bootstrap_admin(app)
+            try:
+                import push
+                push.ensure_keys()
+            except Exception:
+                app.logger.exception("could not prepare push keys")
+            if app.config["SEED_DEMO"]:
+                from seed_data import seed_demo_data
+                seed_demo_data()
+        finally:
+            db.session.remove()
+            if lock is not None:
+                lock.execute(text("SELECT pg_advisory_unlock(724111)"))
+                lock.close()
 
     return app
 
@@ -118,8 +134,12 @@ def _add_missing_columns():
     wanted = {
         "users": {"is_admin": f"BOOLEAN NOT NULL DEFAULT {false_}",
                   "active": f"BOOLEAN NOT NULL DEFAULT {true_}",
-                  "notif_seen_at": "TIMESTAMP"},
-        "tickets": {"assignee_id": "INTEGER REFERENCES users(id)"},
+                  "notif_seen_at": "TIMESTAMP",
+                  "business_id": "INTEGER REFERENCES businesses(id)",
+                  "must_change_password": f"BOOLEAN NOT NULL DEFAULT {false_}",
+                  "last_login_at": "TIMESTAMP"},
+        "tickets": {"assignee_id": "INTEGER REFERENCES users(id)",
+                    "business_id": "INTEGER REFERENCES businesses(id)"},
     }
     with db.engine.begin() as conn:
         for table, cols in wanted.items():
@@ -127,6 +147,39 @@ def _add_missing_columns():
             for col, ddl in cols.items():
                 if col not in have:
                     conn.execute(text(f"ALTER TABLE {table} ADD COLUMN {col} {ddl}"))
+
+
+def _backfill_businesses(app):
+    """One-time move from self-sign-up to business accounts: customers without a business are
+    grouped by work-email domain (personal emails get their own), and their tickets follow."""
+    from models import Business, Ticket, User
+    from orgs import team_domain
+    loose = User.query.filter(User.role == "customer", User.business_id.is_(None)).order_by(User.id).all()
+    if loose:
+        groups = {}
+        for u in loose:
+            groups.setdefault(team_domain(u.email) or u.email, []).append(u)
+        for key, members in groups.items():
+            name = (members[0].company or key).strip()[:255] or key
+            base, n = name, 2
+            while Business.query.filter(db.func.lower(Business.name) == name.lower()).first():
+                name = f"{base} ({n})"; n += 1
+            b = Business(name=name)
+            db.session.add(b)
+            db.session.flush()
+            for u in members:
+                u.business_id = b.id
+                u.company = b.name
+        db.session.commit()
+        app.logger.info("Moved %d customers into business accounts", len(loose))
+    orphan = Ticket.query.filter(Ticket.business_id.is_(None)).all()
+    if orphan:
+        owners = {u.id: u for u in User.query.filter(User.id.in_({t.created_by for t in orphan})).all()}
+        for t in orphan:
+            o = owners.get(t.created_by)
+            if o and o.business_id:
+                t.business_id = o.business_id
+        db.session.commit()
 
 
 def _bootstrap_admin(app):
