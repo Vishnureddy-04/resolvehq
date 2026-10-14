@@ -199,11 +199,11 @@
       if(u.role!=='customer') return res(403,{error:'Only customers can submit issues.'});
       const f=opt.body, type=f.get('type'), cat=f.get('category');
       const fields={}; if(!f.get('title')) fields.title='Please add a title.'; if(!f.get('description')) fields.description='Please describe the issue.';
-      if(!['bug','enhancement'].includes(type)) fields.type='Choose Urgent fix or Feature change.'; if(!cat) fields.category='Please choose a category.';
+      if(!['bug','feature','enhancement'].includes(type)) fields.type='Choose Bug, Add new feature or Enhancement.'; if(!cat) fields.category='Please choose a category.';
       if(Object.keys(fields).length) return res(400,{error:'Please fill in the required fields.',fields});
       const t={id:'TKT-'+(++db.seq),ownerId:u.id,businessId:u.businessId||null,title:f.get('title'),desc:f.get('description'),category:cat,type,priority:type==='bug'?'P0':null,status:'submitted',team:'',assigneeId:null,createdAt:T,updatedAt:T,resolvedAt:null,closedAt:null,attachments:[],events:[]};
       log(db,t,'submitted',u,'','Issue submitted — our team will review shortly');
-      if(type==='bug') log(db,t,'note',u,'Priority','Set to P0 — customer marked this as an urgent fix');
+      if(type==='bug') log(db,t,'note',u,'Priority','Set to P0 — customer reported a bug');
       const er=await addImages(db,t,f.getAll('files'),u); if(er) return res(400,{error:er});
       db.tickets.push(t); save(db); return res(201,out(db,t,u)); }
     const mm=path.match(/^\/tickets\/([^/]+)(\/attachments|\/messages)?$/);
@@ -868,7 +868,7 @@ const PIPELINE = [
   {key:'resolved',   label:'Resolved',   desc:'Fix delivered'},
   {key:'closed',     label:'Closed',     desc:'Confirmed & wrapped up'},
 ];
-const TYPES = { bug:'Urgent fix', enhancement:'Feature change', support:'Support issue' };
+const TYPES = { bug:'Bug', feature:'New feature', enhancement:'Enhancement', support:'Support issue' };
 const PORDER = {P0:0,P1:1,P2:2,P3:3};
 const PLABEL = {P0:'Critical',P1:'High',P2:'Medium',P3:'Low'};
 

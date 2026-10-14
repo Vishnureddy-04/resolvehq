@@ -193,11 +193,11 @@
       if(u.role!=='customer') return res(403,{error:'Only customers can submit issues.'});
       const f=opt.body, type=f.get('type'), cat=f.get('category');
       const fields={}; if(!f.get('title')) fields.title='Please add a title.'; if(!f.get('description')) fields.description='Please describe the issue.';
-      if(!['bug','enhancement'].includes(type)) fields.type='Choose Urgent fix or Feature change.'; if(!cat) fields.category='Please choose a category.';
+      if(!['bug','feature','enhancement'].includes(type)) fields.type='Choose Bug, Add new feature or Enhancement.'; if(!cat) fields.category='Please choose a category.';
       if(Object.keys(fields).length) return res(400,{error:'Please fill in the required fields.',fields});
       const t={id:'TKT-'+(++db.seq),ownerId:u.id,businessId:u.businessId||null,title:f.get('title'),desc:f.get('description'),category:cat,type,priority:type==='bug'?'P0':null,status:'submitted',team:'',assigneeId:null,createdAt:T,updatedAt:T,resolvedAt:null,closedAt:null,attachments:[],events:[]};
       log(db,t,'submitted',u,'','Issue submitted — our team will review shortly');
-      if(type==='bug') log(db,t,'note',u,'Priority','Set to P0 — customer marked this as an urgent fix');
+      if(type==='bug') log(db,t,'note',u,'Priority','Set to P0 — customer reported a bug');
       const er=await addImages(db,t,f.getAll('files'),u); if(er) return res(400,{error:er});
       db.tickets.push(t); save(db); return res(201,out(db,t,u)); }
     const mm=path.match(/^\/tickets\/([^/]+)(\/attachments|\/messages)?$/);
@@ -888,8 +888,9 @@ const PIPELINE = [
 ];
 const CATEGORIES = ['Purchase order','Invoice','GRN','Credit note','E-invoice','Other'];
 const TYPES = {
-  bug:        {label:'Urgent fix',     desc:'Something is broken and affecting our operations. Needs fixing immediately.', icon:'<path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>', cls:'urgent'},
-  enhancement:{label:'Feature change', desc:'Change or add something in the portal.', icon:'<path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/>'},
+  bug:        {label:'Bug',             desc:'Something is broken or not working as it should.', icon:'<path d="m8 2 1.88 1.88M14.12 3.88 16 2M9 7.13v-1a3.003 3.003 0 1 1 6 0v1"/><path d="M12 20c-3.3 0-6-2.7-6-6v-3a4 4 0 0 1 4-4h4a4 4 0 0 1 4 4v3c0 3.3-2.7 6-6 6"/><path d="M12 20v-9M6.53 9C4.6 8.8 3 7.1 3 5M6 13H2M3 21c0-2.1 1.7-3.9 3.8-4M20.97 5c0 2.1-1.6 3.8-3.5 4M22 13h-4M17.2 17c2.1.1 3.8 1.9 3.8 4"/>', cls:'urgent'},
+  feature:    {label:'Add new feature', desc:'Something new you would like added to the portal.', icon:'<circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/>'},
+  enhancement:{label:'Enhancement',     desc:'Improve or change something that already exists.', icon:'<path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/>'},
   support:    {label:'Support issue',  desc:'Need help / a question', icon:'', legacy:true},
 };
 
@@ -1200,13 +1201,13 @@ function viewNew(){
       </div>
       <div class="fg">
         <label>What do you need?</label>
-        <div class="typegrid two-types" id="fg-type">
+        <div class="typegrid" id="fg-type">
           ${Object.entries(TYPES).filter(([k,v])=>!v.legacy).map(([k,v])=>`
             <label class="typeopt ${v.cls||''}"><input type="radio" name="ftype" value="${k}" onchange="onTypeChange()">
               <div class="box"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${v.icon}</svg><span class="tt">${v.label}</span><span class="dd">${v.desc}</span></div>
             </label>`).join('')}
         </div>
-        <div class="type-err">Please choose Urgent fix or Feature change.</div>
+        <div class="type-err">Please choose Bug, Add new feature or Enhancement.</div>
         <div class="type-hint" id="typeHint"></div>
       </div>
       <div class="two">
@@ -1305,11 +1306,14 @@ function onTypeChange(){
   const v=document.querySelector('input[name=ftype]:checked')?.value; $('#fg-type').classList.remove('bad');
   const h=$('#typeHint'), d=$('#f-desc');
   if(v==='bug'){
-    h.className='type-hint urgent'; h.textContent='This will be marked P0 · Critical and our team is alerted right away. Please use it only when your work is blocked.';
+    h.className='type-hint urgent'; h.textContent='Bugs are marked P0 · Critical and our team is alerted right away.';
     d.placeholder='What is broken? Who is affected and what can\'t they do? Steps to reproduce, error messages, when it started.';
+  }else if(v==='feature'){
+    h.className='type-hint'; h.textContent='Our team will review your request and plan it in.';
+    d.placeholder='What would you like added? Which page or process is it for? How would it help your team?';
   }else{
     h.className='type-hint'; h.textContent='Our team will review your request and plan it in.';
-    d.placeholder='What would you like changed or added? Which page? Why would it help your team?';
+    d.placeholder='What would you like improved? Which page? What should change, and why would it help your team?';
   }
 }
 async function submitIssue(){

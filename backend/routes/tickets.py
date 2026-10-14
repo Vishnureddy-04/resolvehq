@@ -8,7 +8,7 @@ from models import Attachment, Ticket, TicketEvent, User, utcnow
 
 bp = Blueprint("tickets", __name__, url_prefix="/api/tickets")
 
-TYPES = {"bug", "enhancement", "support"}
+TYPES = {"bug", "feature", "enhancement", "support"}
 CATEGORIES = {"Purchase order", "Invoice", "GRN", "Credit note", "E-invoice", "Other"}
 STATUSES = {"submitted", "in_review", "in_progress", "awaiting_customer", "resolved", "closed"}
 PRIORITIES = {"P0", "P1", "P2", "P3"}
@@ -126,7 +126,7 @@ def create_ticket():
     if not desc:
         fields["description"] = "Please describe the issue."
     if itype not in TYPES:
-        fields["type"] = "Choose Urgent fix or Feature change."
+        fields["type"] = "Choose Bug, Add new feature or Enhancement."
     if category not in CATEGORIES:
         fields["category"] = "Please choose a category."
     if fields:
@@ -147,9 +147,9 @@ def create_ticket():
     db.session.flush()
     t.ticket_id = f"TKT-{1000 + t.id}"
     log(t, "submitted", user, note="Issue submitted — our team will review shortly")
-    if itype == "bug":  # "Urgent fix": blocking the customer's operations
+    if itype == "bug":  # bugs go straight to the top of the queue
         t.priority = "P0"
-        log(t, "note", user, label="Priority", note="Set to P0 — customer marked this as an urgent fix")
+        log(t, "note", user, label="Priority", note="Set to P0 — customer reported a bug")
 
     saved = []
     try:

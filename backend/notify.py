@@ -11,7 +11,7 @@ from flask import current_app
 
 import push
 
-TYPE_LABEL = {"bug": "Urgent fix", "enhancement": "Feature change", "support": "Support issue"}
+TYPE_LABEL = {"bug": "Bug", "feature": "New feature", "enhancement": "Enhancement", "support": "Support issue"}
 
 
 def _post(url, payload, logger):

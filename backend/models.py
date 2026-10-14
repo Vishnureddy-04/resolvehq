@@ -88,7 +88,7 @@ class Ticket(db.Model):
     title = db.Column(db.String(200), nullable=False)
     description = db.Column(db.Text, nullable=False)
     category = db.Column(db.String(100), nullable=False)
-    issue_type = db.Column(db.String(30), nullable=False)    # bug | enhancement | support
+    issue_type = db.Column(db.String(30), nullable=False)    # bug | feature | enhancement | support
     priority = db.Column(db.String(4))                        # P0..P3 or NULL
     status = db.Column(db.String(30), nullable=False, default="submitted")
     assigned_team = db.Column(db.String(100))
